@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ações de Resposta — Vigidesastres</title>
+  <meta name="description" content="Registro e acompanhamento das ações de resposta da SMS Recife.">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'DM Sans', sans-serif; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900">
+
+  <div class="min-h-screen bg-slate-50 text-slate-900">
+    
+    <!-- Sidebar Desktop -->
+    <div class="fixed inset-y-0 left-0 z-30 hidden lg:block">
+      <aside class="flex h-full w-64 flex-col bg-slate-900 text-slate-100">
+        <div class="flex h-20 items-center gap-3 border-b border-slate-800 px-6">
+          <div class="grid size-10 shrink-0 place-items-center rounded-md bg-blue-600 text-white">
+            <i data-lucide="shield-check" class="w-6 h-6"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="truncate text-lg font-bold">Vigidesastres</div>
+            <div class="text-xs font-medium text-slate-400">SMS · Recife</div>
+          </div>
+        </div>
+        <nav class="flex-1 space-y-1 px-3 py-6">
+          <a href="dashboard.html" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold text-slate-400 hover:bg-slate-800 hover:text-white">
+            <i data-lucide="layout-dashboard" class="w-5 h-5"></i><span>Dashboard</span>
+          </a>
+          <a href="mapa.html" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold text-slate-400 hover:bg-slate-800 hover:text-white">
+            <i data-lucide="map" class="w-5 h-5"></i><span>Mapa</span>
+          </a>
+          <a href="alertas.html" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold text-slate-400 hover:bg-slate-800 hover:text-white">
+            <i data-lucide="bell-ring" class="w-5 h-5"></i><span>Alertas</span>
+          </a>
+          <a href="relatorios.html" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold text-slate-400 hover:bg-slate-800 hover:text-white">
+            <i data-lucide="file-bar-chart" class="w-5 h-5"></i><span>Relatórios</span>
+          </a>
+          <a href="acoes.html" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold bg-slate-800 text-white">
+            <i data-lucide="clipboard-check" class="w-5 h-5"></i><span>Ações</span>
+          </a>
+        </nav>
+      </aside>
+    </div>
+
+    <!-- Conteúdo Principal -->
+    <div class="lg:pl-64">
+      <main class="mx-auto min-h-screen max-w-[1600px] p-4 md:p-6 xl:p-8">
+        
+        <header class="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 border-b border-slate-200 pb-5">
+          <div class="min-w-0">
+            <h1 class="truncate text-2xl font-bold text-slate-900 md:text-3xl">Ações</h1>
+            <p class="mt-1 text-sm text-slate-500">Registro e acompanhamento de ações de resposta</p>
+          </div>
+          <div class="flex shrink-0 items-center gap-2">
+            <button onclick="toggleModal(true)" class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span class="hidden sm:inline">Registrar nova ação</span>
+              <span class="sm:hidden">Registrar</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Filtros -->
+        <div class="mb-4 inline-flex rounded-md border border-slate-200 bg-white p-1 shadow-sm">
+          <button onclick="setFilter('Todos')" id="filter-Todos" class="filter-btn rounded px-3 py-1 text-xs font-semibold bg-blue-600 text-white">Todos</button>
+          <button onclick="setFilter('Em andamento')" id="filter-Em andamento" class="filter-btn rounded px-3 py-1 text-xs font-semibold text-slate-600 hover:text-slate-900">Em andamento</button>
+          <button onclick="setFilter('Concluída')" id="filter-Concluída" class="filter-btn rounded px-3 py-1 text-xs font-semibold text-slate-600 hover:text-slate-900">Concluídas</button>
+        </div>
+
+        <!-- Tabela -->
+        <section class="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+          <table class="w-full min-w-[760px] text-left text-sm">
+            <thead class="bg-slate-50 text-xs uppercase text-slate-500 border-b border-slate-200">
+              <tr>
+                <th class="px-5 py-3 font-semibold">Ação</th>
+                <th class="px-5 py-3 font-semibold">Equipe responsável</th>
+                <th class="px-5 py-3 font-semibold">Distrito</th>
+                <th class="px-5 py-3 font-semibold">Data</th>
+                <th class="px-5 py-3 font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody id="actions-table-body" class="divide-y divide-slate-200">
+              <!-- Injetado via JS -->
+            </tbody>
+          </table>
+        </section>
+
+        <!-- Modal para Registrar Nova Ação -->
+        <div id="action-modal" class="fixed inset-0 z-50 hidden grid place-items-center bg-slate-900/50 p-4 backdrop-blur-sm">
+          <form onsubmit="submitNewAction(event)" class="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-xl">
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl font-bold text-slate-900">Registrar nova ação</h2>
+              <button type="button" onclick="toggleModal(false)" class="p-1 text-slate-400 hover:text-slate-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            
+            <label class="mt-5 block text-sm font-semibold text-slate-900">
+              Descrição da ação
+              <input id="action-name-input" required placeholder="Ex.: Vistoria em unidade de saúde" class="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 font-normal text-sm outline-none focus:ring-2 focus:ring-blue-600" />
+            </label>
+
+            <div class="mt-6 flex justify-end gap-2">
+              <button type="button" onclick="toggleModal(false)" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                Cancelar
+              </button>
+              <button type="submit" class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                Registrar ação
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script>
+    let actionsList = [
+      { name: "Distribuição de hipoclorito — Várzea", team: "Vigilância Ambiental", district: "DS VI", date: "02/09/2026", status: "Em andamento" },
+      { name: "Triagem em abrigo temporário — Ibura", team: "SAMU + UBS Ibura", district: "DS VI", date: "02/09/2026", status: "Em andamento" },
+      { name: "Nebulização — Afogados", team: "Endemias", district: "DS VI", date: "01/09/2026", status: "Em andamento" },
+      { name: "Visita domiciliar pós-chuva — Várzea", team: "ACS DS VI", district: "DS VI", date: "31/08/2026", status: "Concluída" },
+      { name: "Alerta sonoro calor — Centro", team: "Comunicação SMS", district: "DS VI", date: "30/08/2026", status: "Concluída" }
+    ];
+
+    let currentFilter = 'Todos';
+
+    function renderActions() {
+      const tbody = document.getElementById('actions-table-body');
+      tbody.innerHTML = '';
+
+      const filtered = currentFilter === 'Todos' 
+        ? actionsList 
+        : actionsList.filter(a => a.status === currentFilter);
+
+      filtered.forEach(action => {
+        const tr = document.createElement('tr');
+        const badgeStyle = action.status === 'Em andamento' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800';
+
+        tr.innerHTML = `
+          <td class="px-5 py-4 font-semibold text-slate-900">${action.name}</td>
+          <td class="px-5 py-4 text-slate-500">${action.team}</td>
+          <td class="px-5 py-4 text-slate-900">${action.district}</td>
+          <td class="px-5 py-4 text-slate-500">${action.date}</td>
+          <td class="px-5 py-4"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${badgeStyle}">${action.status}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.className = 'filter-btn rounded px-3 py-1 text-xs font-semibold text-slate-600 hover:text-slate-900';
+      });
+      
+      const activeBtn = document.getElementById(`filter-${filter}`);
+      if (activeBtn) activeBtn.className = 'filter-btn rounded px-3 py-1 text-xs font-semibold bg-blue-600 text-white';
+
+      renderActions();
+    }
+
+    function toggleModal(show) {
+      const modal = document.getElementById('action-modal');
+      if (show) modal.classList.remove('hidden');
+      else modal.classList.add('hidden');
+    }
+
+    function submitNewAction(e) {
+      e.preventDefault();
+      const input = document.getElementById('action-name-input');
+      const name = input.value.trim();
+
+      if (name) {
+        actionsList.unshift({
+          name: name,
+          team: "Equipe designada",
+          district: "DS I",
+          date: "02/09/2026",
+          status: "Em andamento"
+        });
+        input.value = '';
+        toggleModal(false);
+        renderActions();
+      }
+    }
+
+    lucide.createIcons();
+    renderActions();
+  </script>
+</body>
+</html>

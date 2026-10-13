@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alertas — Vigidesastres SMS Recife</title>
+  <meta name="description" content="Consulta e acompanhamento de alertas de saúde no Recife.">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'DM Sans', sans-serif; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900">
+
+  <div class="min-h-screen bg-slate-50 text-slate-900">
+    
+    <!-- Sidebar Desktop -->
+    <div class="fixed inset-y-0 left-0 z-30 hidden lg:block">
+      <aside class="flex h-full w-64 flex-col bg-slate-900 text-slate-100">
+        <div class="flex h-20 items-center gap-3 border-b border-slate-800 px-6">
+          <div class="grid size-10 shrink-0 place-items-center rounded-md bg-blue-600 text-white">
+            <i data-lucide="shield-check" class="w-6 h-6"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="truncate text-lg font-bold">Vigidesastres</div>
+            <div class="text-xs font-medium text-slate-400">SMS · Recife</div>
+          </div>
+        </div>
+        <nav class="flex-1 space-y-1 px-3 py-6">
+          <a href="{% url 'dashboard' %}" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold text-slate-400 hover:bg-slate-800 hover:text-white">
+            <i data-lucide="layout-dashboard" class="w-5 h-5"></i><span>Dashboard</span>
+          </a>
+          <a href="{% url 'mapa' %}" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold text-slate-400 hover:bg-slate-800 hover:text-white">
+            <i data-lucide="map" class="w-5 h-5"></i><span>Mapa</span>
+          </a>
+          <a href="{% url 'alertas' %}" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold bg-slate-800 text-white">
+            <i data-lucide="bell-ring" class="w-5 h-5"></i><span>Alertas</span>
+          </a>
+          <a href="{% url 'relatorios' %}" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold text-slate-400 hover:bg-slate-800 hover:text-white">
+            <i data-lucide="file-bar-chart" class="w-5 h-5"></i><span>Relatórios</span>
+          </a>
+          <a href="{% url 'acoes' %}" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold text-slate-400 hover:bg-slate-800 hover:text-white">
+            <i data-lucide="clipboard-check" class="w-5 h-5"></i><span>Ações</span>
+          </a>
+        </nav>
+      </aside>
+    </div>
+
+    <!-- Conteúdo Principal -->
+    <div class="lg:pl-64">
+      <main class="mx-auto min-h-screen max-w-[1600px] p-4 md:p-6 xl:p-8">
+        
+        <header class="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 border-b border-slate-200 pb-5">
+          <div class="min-w-0">
+            <h1 class="truncate text-2xl font-bold text-slate-900 md:text-3xl">Alertas</h1>
+            <p class="mt-1 text-sm text-slate-500">Acompanhamento e priorização de ocorrências</p>
+          </div>
+        </header>
+
+        <!-- KPI Cards -->
+        <section class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <article class="rounded-lg border border-slate-200 bg-white p-4 md:p-5 shadow-sm">
+            <p class="text-xs font-medium text-slate-500 md:text-sm">Total de alertas</p>
+            <p class="mt-2 text-3xl font-bold text-blue-600">9</p>
+          </article>
+          <article class="rounded-lg border border-slate-200 bg-white p-4 md:p-5 shadow-sm">
+            <p class="text-xs font-medium text-slate-500 md:text-sm">Em aberto</p>
+            <p class="mt-2 text-3xl font-bold text-red-600">4</p>
+          </article>
+          <article class="rounded-lg border border-slate-200 bg-white p-4 md:p-5 shadow-sm">
+            <p class="text-xs font-medium text-slate-500 md:text-sm">Monitorando</p>
+            <p class="mt-2 text-3xl font-bold text-amber-600">1</p>
+          </article>
+          <article class="rounded-lg border border-slate-200 bg-white p-4 md:p-5 shadow-sm">
+            <p class="text-xs font-medium text-slate-500 md:text-sm">Encerrados</p>
+            <p class="mt-2 text-3xl font-bold text-green-600">4</p>
+          </article>
+        </section>
+
+        <!-- Painel de Tabela + Filtros -->
+        <section class="mt-5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div class="grid gap-3 border-b border-slate-200 p-4 md:grid-cols-[minmax(220px,1fr)_220px_180px]">
+            <label class="relative block">
+              <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"></i>
+              <input id="search-input" oninput="filterAlerts()" placeholder="Buscar por título ou área..." class="h-10 w-full rounded-md border border-slate-300 bg-white pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-600" />
+            </label>
+            <select id="type-filter" onchange="filterAlerts()" class="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-600">
+              <option value="Todos">Todos os tipos</option>
+              <option value="Alagamento">Alagamento</option>
+              <option value="Deslizamento">Deslizamento</option>
+              <option value="Chuva">Chuva</option>
+              <option value="Calor">Calor</option>
+              <option value="Epidemiológico">Epidemiológico</option>
+              <option value="Peçonhentos">Peçonhentos</option>
+            </select>
+            <select id="district-filter" onchange="filterAlerts()" class="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-600">
+              <option value="Todos">Todos os DS</option>
+              <option value="DS I">DS I</option>
+              <option value="DS II">DS II</option>
+              <option value="DS III">DS III</option>
+              <option value="DS IV">DS IV</option>
+              <option value="DS V">DS V</option>
+              <option value="DS VI">DS VI</option>
+            </select>
+          </div>
+
+          <!-- Tabela -->
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[950px] text-left text-sm">
+              <thead class="bg-slate-50 text-xs uppercase text-slate-500 border-b border-slate-200">
+                <tr>
+                  <th class="px-5 py-3 font-semibold">Severidade</th>
+                  <th class="px-5 py-3 font-semibold">Título</th>
+                  <th class="px-5 py-3 font-semibold">Tipo</th>
+                  <th class="px-5 py-3 font-semibold">Área</th>
+                  <th class="px-5 py-3 font-semibold">Data</th>
+                  <th class="px-5 py-3 font-semibold">Hora</th>
+                  <th class="px-5 py-3 font-semibold">Status</th>
+                  <th class="px-5 py-3 font-semibold">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="alerts-table-body" class="divide-y divide-slate-200">
+                <!-- Injetado dinamicamente via JS -->
+              </tbody>
+            </table>
+            
+            <div id="no-results" class="hidden p-10 text-center text-sm text-slate-500">
+              <i data-lucide="sliders-horizontal" class="mx-auto mb-2 w-6 h-6"></i>
+              Nenhum alerta encontrado.
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const alertsData = [
+      { severity: "ALTO", title: "Alagamento — Várzea", type: "Alagamento", area: "DS VI", date: "02/09/2026", time: "08:42", status: "Em aberto" },
+      { severity: "ALTO", title: "Risco de deslizamento — Ibura", type: "Deslizamento", area: "DS V", date: "02/09/2026", time: "07:15", status: "Em aberto" },
+      { severity: "MÉDIO", title: "Acumulado de chuva elevado — Boa Viagem", type: "Chuva", area: "DS II", date: "02/09/2026", time: "06:58", status: "Em aberto" },
+      { severity: "MÉDIO", title: "Onda de calor — Boa Vista", type: "Calor", area: "DS I", date: "02/09/2026", time: "05:30", status: "Em aberto" },
+      { severity: "BAIXO", title: "Surto leptospirose — Afogados", type: "Epidemiológico", area: "DS IV", date: "01/09/2026", time: "14:20", status: "Monitorando" },
+      { severity: "MÉDIO", title: "Alagamento — Pina", type: "Alagamento", area: "DS II", date: "01/09/2026", time: "11:05", status: "Encerrado" },
+      { severity: "BAIXO", title: "Acidentes escorpiões — Ibura", type: "Peçonhentos", area: "DS V", date: "01/09/2026", time: "09:33", status: "Encerrado" },
+      { severity: "ALTO", title: "Deslizamento — Morro da Conceição", type: "Deslizamento", area: "DS III", date: "31/08/2026", time: "22:10", status: "Encerrado" },
+      { severity: "BAIXO", title: "Inundação — Tejipió", type: "Alagamento", area: "DS V", date: "31/08/2026", time: "18:00", status: "Encerrado" }
+    ];
+
+    function renderTable(items) {
+      const tbody = document.getElementById('alerts-table-body');
+      const noResults = document.getElementById('no-results');
+      tbody.innerHTML = '';
+
+      if (items.length === 0) {
+        noResults.classList.remove('hidden');
+        return;
+      }
+      noResults.classList.add('hidden');
+
+      items.forEach(alert => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition-colors";
+
+        const sevBadge = alert.severity === 'ALTO' ? 'bg-red-100 text-red-800' : alert.severity === 'MÉDIO' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800';
+        const stBadge = alert.status === 'Em aberto' ? 'bg-red-100 text-red-800' : alert.status === 'Monitorando' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700';
+
+        tr.innerHTML = `
+          <td class="px-5 py-4"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${sevBadge}">${alert.severity}</span></td>
+          <td class="px-5 py-4 font-semibold text-slate-900">${alert.title}</td>
+          <td class="px-5 py-4 text-slate-500">${alert.type}</td>
+          <td class="px-5 py-4 text-slate-900">${alert.area}</td>
+          <td class="px-5 py-4 text-slate-500">${alert.date}</td>
+          <td class="px-5 py-4 text-slate-500">${alert.time}</td>
+          <td class="px-5 py-4"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${stBadge}">${alert.status}</span></td>
+          <td class="px-5 py-4"><button class="text-xs font-semibold text-blue-600 hover:underline">Ver →</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterAlerts() {
+      const search = document.getElementById('search-input').value.toLowerCase();
+      const type = document.getElementById('type-filter').value;
+      const district = document.getElementById('district-filter').value;
+
+      const filtered = alertsData.filter(a => {
+        const matchesSearch = `${a.title} ${a.area}`.toLowerCase().includes(search);
+        const matchesType = type === 'Todos' || a.type === type;
+        const matchesDistrict = district === 'Todos' || a.area === district;
+        return matchesSearch && matchesType && matchesDistrict;
+      });
+
+      renderTable(filtered);
+    }
+
+    lucide.createIcons();
+    renderTable(alertsData);
+  </script>
+</body>
+</html>

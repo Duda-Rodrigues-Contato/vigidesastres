@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Vigidesastres{% endblock %} — SMS Recife</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'DM Sans', sans-serif; }
+  </style>
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900">
+
+  <div class="min-h-screen bg-slate-50 text-slate-900">
+
+    <!-- Sidebar Desktop -->
+    <div class="fixed inset-y-0 left-0 z-30 hidden lg:block">
+      <aside class="flex h-full w-64 flex-col bg-slate-900 text-slate-100">
+        <div class="flex h-20 items-center gap-3 border-b border-slate-800 px-6">
+          <div class="grid size-10 shrink-0 place-items-center rounded-md bg-blue-600 text-white">
+            <i data-lucide="shield-check" class="w-6 h-6"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="truncate text-lg font-bold">Vigidesastres</div>
+            <div class="text-xs font-medium text-slate-400">SMS · Recife</div>
+          </div>
+        </div>
+
+        <nav class="flex-1 space-y-1 px-3 py-6" aria-label="Navegação principal">
+          {% include 'components/nav-links.html' %}
+        </nav>
+
+        <div class="border-t border-slate-800 p-4">
+          <div class="flex items-center gap-3">
+            <div class="grid size-9 place-items-center rounded-full bg-slate-800 text-xs font-bold">VE</div>
+            <div>
+              <div class="text-xs font-semibold">Vigilância em Saúde</div>
+              <div class="text-[11px] text-slate-400">Operação integrada</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Sidebar Mobile -->
+    <div id="mobile-sidebar" class="fixed inset-0 z-40 hidden lg:hidden">
+      <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="toggleMobileMenu()"></div>
+      <div class="relative h-full w-64">
+        <aside class="flex h-full w-64 flex-col bg-slate-900 text-slate-100">
+          <div class="flex h-20 items-center gap-3 border-b border-slate-800 px-6">
+            <div class="grid size-10 shrink-0 place-items-center rounded-md bg-blue-600 text-white">
+              <i data-lucide="shield-check" class="w-6 h-6"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="truncate text-lg font-bold">Vigidesastres</div>
+              <div class="text-xs font-medium text-slate-400">SMS · Recife</div>
+            </div>
+          </div>
+          <nav class="flex-1 space-y-1 px-3 py-6">
+            {% include 'components/nav-links.html' %}
+          </nav>
+        </aside>
+        <button class="absolute right-2 top-2 p-2 text-white" onclick="toggleMobileMenu()">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Container principal -->
+    <div class="lg:pl-64">
+      <div class="sticky top-0 z-20 grid h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur md:px-8 lg:hidden">
+        <button class="p-2 text-slate-700" onclick="toggleMobileMenu()">
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+        <span class="truncate font-bold">{% block page_title %}Vigidesastres{% endblock %}</span>
+        <div class="flex size-9 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">VE</div>
+      </div>
+
+      <main class="mx-auto min-h-screen max-w-[1600px] p-4 md:p-6 xl:p-8">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <script>
+    function toggleMobileMenu() {
+      document.getElementById('mobile-sidebar').classList.toggle('hidden');
+    }
+  </script>
+  {% block scripts %}{% endblock %}
+  <script>lucide.createIcons();</script>
+</body>
+</html>

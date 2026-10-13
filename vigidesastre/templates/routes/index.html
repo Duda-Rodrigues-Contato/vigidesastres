@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vigidesastres — SMS Recife</title>
+  <meta name="description" content="Vigilância em saúde e gestão integrada de riscos e desastres do Recife.">
+  <meta name="author" content="Secretaria de Saúde do Recife">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="Vigidesastres — SMS Recife">
+  <meta property="og:description" content="Vigilância em saúde e gestão integrada de riscos e desastres do Recife.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      font-family: 'DM Sans', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+  <!-- Exemplo de Renderização da Página Não Encontrada (404) -->
+  <div id="not-found-view" class="hidden flex min-h-screen items-center justify-center bg-background px-4">
+    <div class="max-w-md text-center">
+      <h1 class="text-7xl font-bold text-slate-900">404</h1>
+      <h2 class="mt-4 text-xl font-semibold text-slate-900">Página não encontrada</h2>
+      <p class="mt-2 text-sm text-slate-500">
+        A página que você está procurando não existe ou foi movida.
+      </p>
+      <div class="mt-6">
+        <a href="/" class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+          Voltar ao início
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Exemplo de Tela de Erro -->
+  <div id="error-view" class="hidden flex min-h-screen items-center justify-center bg-background px-4">
+    <div class="max-w-md text-center">
+      <h1 class="text-xl font-semibold tracking-tight text-slate-900">
+        Esta página não pôde ser carregada
+      </h1>
+      <p class="mt-2 text-sm text-slate-500">
+        Algo deu errado do nosso lado. Você pode tentar recarregar ou voltar ao início.
+      </p>
+      <div class="mt-6 flex flex-wrap justify-center gap-2">
+        <button onclick="window.location.reload()" class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+          Tentar novamente
+        </button>
+        <a href="/" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100">
+          Voltar ao início
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>
