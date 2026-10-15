@@ -1,4 +1,5 @@
 import os
+from datetime import timezone
 
 import certifi
 from django.http import JsonResponse
@@ -119,3 +120,45 @@ def get_unidades_geojson(request):
     ]
 
     return JsonResponse({"type": "FeatureCollection", "features": features})
+
+
+def get_zonas_chuva_geojson(request):
+    """Zonas de chuva estimada: distritos fundidos por célula do modelo.
+
+    O Open-Meteo enxerga o Recife em poucas células, então vários
+    distritos recebem a mesma chuva. Mostrar a zona inteira é mais
+    honesto do que repetir o mesmo número em cada distrito.
+    """
+    colecao = get_mongo_client()[BANCO]["ZonasChuva"]
+
+    features = []
+    coletado_em = None
+    for z in colecao.find({}, {"_id": 0}):
+        coletado_em = z.get("coletado_em")
+        features.append(
+            {
+                "type": "Feature",
+                "geometry": z["geometria"],
+                "properties": {
+                    "zona_id": z["zona_id"],
+                    "nome": z["nome"],
+                    "chuva_24h_mm": z["chuva_24h_mm"],
+                    "chuva_7d_mm": z["chuva_7d_mm"],
+                    "distritos": z["distritos"],
+                    "ponto_rotulo": z.get("ponto_rotulo"),
+                },
+            }
+        )
+
+    # o pymongo devolve datetime sem fuso; o valor gravado é UTC
+    if coletado_em is not None:
+        coletado_em = coletado_em.replace(tzinfo=timezone.utc).isoformat()
+
+    return JsonResponse(
+        {
+            "type": "FeatureCollection",
+            "coletado_em": coletado_em,
+            "fonte": "Open-Meteo — modelo meteorológico, não medição",
+            "features": features,
+        }
+    )

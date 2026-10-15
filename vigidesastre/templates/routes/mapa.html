@@ -46,7 +46,7 @@
                   <div class="rounded bg-slate-100 p-2">
                     <i data-lucide="cloud-rain" class="mx-auto text-blue-600 w-4 h-4"></i>
                     <strong id="district-rain" class="mt-1 block text-sm">52.4 mm</strong>
-                    <small class="text-[10px] text-slate-500">Chuva 24h</small>
+                    <small id="district-rain-label" class="text-[10px] text-slate-500">Chuva 24h</small>
                   </div>
                   <div class="rounded bg-slate-100 p-2">
                     <i data-lucide="users" class="mx-auto text-blue-600 w-4 h-4"></i>
@@ -70,6 +70,10 @@
                 </h2>
                 <div class="mt-4 space-y-3">
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
+                    <input type="checkbox" id="camada-chuva" class="size-4 accent-blue-600"> Chuva estimada
+                    <span class="text-xs text-slate-400">(modelo)</span>
+                  </label>
+                  <label class="flex cursor-pointer items-center gap-3 text-sm">
                     <input type="checkbox" checked disabled class="size-4 accent-blue-600"> Risco de alagamento
                     <span class="text-xs text-slate-400">(sem fonte)</span>
                   </label>
@@ -88,7 +92,7 @@
                 </div>
               </div>
 
-              <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+              <div id="painel-risco" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition-opacity">
                 <h2 class="font-bold text-slate-900">Nível de risco</h2>
                 <div class="mt-4 space-y-3">
                   <div class="flex items-center justify-between text-sm">
@@ -151,28 +155,89 @@
         return (d && CORES_RISCO[d.risco]) || '#94a3b8';
       }
 
+      let camadaDistritos = null;
+      let distritoSelecionado = null;
+      // roxo nao colide com nenhuma outra cor do mapa: risco (vermelho,
+      // amarelo, verde), chuva (azuis) e mouse (cinza-escuro)
+      const COR_SELECAO = '#7c3aed';
+
+      function chuvaLigada() {
+        return document.getElementById('camada-chuva').checked;
+      }
+
+      function formatarMm(mm) {
+        return mm.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' mm';
+      }
+
+      // Tres estados visuais:
+      //  - normal: preenchido pela cor de risco
+      //  - chuva ligada: so um contorno fino e tracejado, para a borda
+      //    grossa das zonas (por baixo) ser a linha dominante
+      //  - selecionado: contorno grosso e escuro enquanto o card estiver aberto,
+      //    para ligar visualmente o card ao poligono
+      function estiloDistrito(feature) {
+        const selecionado = nomeDistrito(feature.properties) === distritoSelecionado;
+        if (chuvaLigada()) {
+          return {
+            fillColor: COR_SELECAO,
+            fillOpacity: selecionado ? 0.15 : 0,
+            color: selecionado ? COR_SELECAO : '#64748b',
+            weight: selecionado ? 4 : 1,
+            dashArray: selecionado ? null : '3 4'
+          };
+        }
+        return {
+          fillColor: corDoDistrito(nomeDistrito(feature.properties)),
+          fillOpacity: 0.45,
+          color: selecionado ? COR_SELECAO : '#0f172a',
+          weight: selecionado ? 4 : 1.5,
+          dashArray: null
+        };
+      }
+
+      // destaque ao passar o mouse: deixa claro a que poligono a dica se refere
+      function destacar(layer) {
+        layer.setStyle({
+          weight: 4,
+          color: '#0f172a',
+          dashArray: null,
+          fillColor: chuvaLigada() ? '#0f172a' : layer.options.fillColor,
+          fillOpacity: chuvaLigada() ? 0.18 : 0.7
+        });
+        layer.bringToFront();
+      }
+
+      function redesenharDistritos() {
+        if (camadaDistritos) camadaDistritos.setStyle(estiloDistrito);
+      }
+
       fetch('/api/distritos/')
         .then(response => response.json())
         .then(data => {
           const camada = L.geoJSON(data, {
-            style: function (feature) {
-              return {
-                fillColor: corDoDistrito(nomeDistrito(feature.properties)),
-                color: '#1e293b',
-                weight: 1.5,
-                fillOpacity: 0.45
-              };
-            },
+            style: estiloDistrito,
             onEachFeature: function (feature, layer) {
               const nome = nomeDistrito(feature.properties);
               if (nome) {
-                layer.bindTooltip(nome, { sticky: true });
+                // dica dinamica: com a chuva ligada, diz a qual zona o distrito pertence
+                layer.bindTooltip(function () {
+                  const zona = chuvaLigada() && zonaDoDistrito[nome];
+                  return zona
+                    ? '<strong>' + nome + '</strong><br>pertence à ' + zona.nome +
+                      '<br>' + formatarMm(zona.chuva_24h_mm) + ' em 24h (modelo)'
+                    : '<strong>' + nome + '</strong>';
+                }, { sticky: true });
               }
+              layer.on('mouseover', function () { destacar(layer); });
+              layer.on('mouseout', function () { camadaDistritos.resetStyle(layer); });
               layer.on('click', function () {
+                distritoSelecionado = nome;
+                redesenharDistritos();
                 selectDistrict(nome);
               });
             }
           }).addTo(map);
+          camadaDistritos = camada;
 
           // enquadra o mapa nos limites reais dos distritos
           if (camada.getBounds().isValid()) {
@@ -242,6 +307,96 @@
           }
         });
 
+
+      // ─── Camada: chuva estimada por zona (Open-Meteo) ───────────
+      // O modelo enxerga o Recife em poucas celulas; distritos na mesma
+      // celula recebem a mesma chuva. Cada zona e um poligono unico com
+      // um unico valor - em vez de repetir o numero em varios distritos.
+      function corChuva(mm) {
+        if (mm < 1) return '#dbeafe';
+        if (mm < 10) return '#93c5fd';
+        if (mm < 30) return '#3b82f6';
+        if (mm < 50) return '#1d4ed8';
+        return '#1e3a8a';
+      }
+
+      const camadaChuva = L.layerGroup();
+      const zonaDoDistrito = {};
+
+      const legendaChuva = L.control({ position: 'bottomright' });
+      legendaChuva.onAdd = function () {
+        const div = L.DomUtil.create('div');
+        div.style.cssText = 'background:#fff;padding:8px 10px;border-radius:6px;' +
+          'font-size:11px;line-height:1.6;box-shadow:0 1px 3px rgba(0,0,0,.2)';
+        const faixas = [[0, '< 1'], [1, '1–10'], [10, '10–30'], [30, '30–50'], [50, '≥ 50']];
+        div.innerHTML = '<strong>Chuva 24h (mm)</strong><br>' +
+          faixas.map(([v, rotulo]) =>
+            '<i style="display:inline-block;width:12px;height:12px;margin-right:6px;' +
+            'vertical-align:middle;background:' + corChuva(v + 0.1) + '"></i>' + rotulo
+          ).join('<br>') +
+          '<br><span style="color:#64748b">Estimativa por modelo<br>meteorológico, não medição</span>';
+        return div;
+      };
+
+      fetch('/api/zonas-chuva/')
+        .then(r => r.json())
+        .then(dados => {
+          L.geoJSON(dados, {
+            // nao-interativa: nunca rouba o mouse dos distritos
+            interactive: false,
+            style: function (feature) {
+              return {
+                fillColor: corChuva(feature.properties.chuva_24h_mm),
+                fillOpacity: 0.45,
+                color: '#1e3a8a',
+                weight: 4
+              };
+            },
+            onEachFeature: function (feature, layer) {
+              const p = feature.properties;
+              p.distritos.forEach(d => { zonaDoDistrito[d.nome] = p; });
+
+              // rotulo fixo dentro da zona: o valor fica visivel mesmo quando
+              // todas as zonas caem na mesma faixa de cor. O ponto vem do
+              // conector (garantidamente dentro do poligono); sem ele, usa o
+              // centro do retangulo envolvente.
+              const ponto = p.ponto_rotulo
+                ? [p.ponto_rotulo[1], p.ponto_rotulo[0]]
+                : layer.getBounds().getCenter();
+              const siglas = p.nome.replace('Zona DS ', '');
+              L.marker(ponto, {
+                interactive: false,
+                icon: L.divIcon({
+                  className: '',
+                  iconSize: null,
+                  html: '<div style="transform:translate(-50%,-50%);background:#1e3a8a;color:#fff;' +
+                        'padding:3px 8px;border-radius:6px;text-align:center;white-space:nowrap;' +
+                        'box-shadow:0 1px 3px rgba(0,0,0,.3);font-family:inherit">' +
+                        '<div style="font-size:13px;font-weight:700">' + formatarMm(p.chuva_24h_mm) + '</div>' +
+                        '<div style="font-size:10px;opacity:.85">DS ' + siglas + '</div></div>'
+                })
+              }).addTo(camadaChuva);
+            }
+          }).addTo(camadaChuva);
+        })
+        .catch(err => console.error('Erro ao carregar zonas de chuva:', err));
+
+      document.getElementById('camada-chuva')
+        .addEventListener('change', function (e) {
+          if (e.target.checked) {
+            camadaChuva.addTo(map);
+            // por baixo dos distritos, para o clique no distrito continuar funcionando
+            camadaChuva.eachLayer(l => l.bringToBack && l.bringToBack());
+            legendaChuva.addTo(map);
+          } else {
+            map.removeLayer(camadaChuva);
+            legendaChuva.remove();
+          }
+          // o painel de risco descreve a cor dos distritos, que some com a chuva ligada
+          document.getElementById('painel-risco').style.opacity = e.target.checked ? '0.4' : '1';
+          redesenharDistritos();
+        });
+
       // Dados ainda mockados. O Recife tem 8 distritos sanitarios desde
       // a reorganizacao de 2014 (DS VII e DS VIII foram desmembrados).
       const districtData = {
@@ -259,8 +414,15 @@
         const card = document.getElementById('district-detail-card');
         // dados ainda mockados; quando a integracao entrar, buscar da API
         const data = districtData[id] || { rain: '--', cases: '--', alerts: '--' };
-        document.getElementById('selected-district-name').innerText = id || 'Distrito';
-        document.getElementById('district-rain').innerText = data.rain;
+        const titulo = document.getElementById('selected-district-name');
+        titulo.innerText = id || 'Distrito';
+        titulo.style.color = COR_SELECAO;  // liga o card ao contorno no mapa
+        // chuva real da zona (Open-Meteo); cai no mock se ainda nao carregou
+        const zona = zonaDoDistrito[id];
+        document.getElementById('district-rain').innerText =
+          zona ? formatarMm(zona.chuva_24h_mm) : data.rain;
+        document.getElementById('district-rain-label').innerText =
+          zona ? 'Chuva 24h · zona (modelo)' : 'Chuva 24h';
         document.getElementById('district-cases').innerText = data.cases;
         document.getElementById('district-alerts').innerText = data.alerts;
         card.classList.remove('hidden');
@@ -268,6 +430,8 @@
 
       function closeDistrictDetail() {
         document.getElementById('district-detail-card').classList.add('hidden');
+        distritoSelecionado = null;
+        redesenharDistritos();
       }
   
   </script>
