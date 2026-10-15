@@ -124,37 +124,70 @@
         attribution: 'Tiles &copy; Esri'
       }).addTo(map);
 
-      // 3. Faz a requisição à API Python para buscar as áreas do MongoDB
+      // 3. Busca os distritos no MongoDB via API
+      // O GeoJSON do portal do Recife traz apenas o campo numerico
+      // 'cdistscodi' (1 a 8), sem o nome do distrito.
+      const ROMANOS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+
+      function nomeDistrito(props) {
+        const codigo = props && props.cdistscodi;
+        return codigo && ROMANOS[codigo - 1] ? 'DS ' + ROMANOS[codigo - 1] : null;
+      }
+
+      // Cor por nivel de risco. Enquanto a integracao de dados nao entra,
+      // o risco vem do mock em districtData.
+      const CORES_RISCO = {
+        alto: '#ef4444',
+        medio: '#f59e0b',
+        baixo: '#22c55e',
+      };
+
+      function corDoDistrito(nome) {
+        const d = districtData[nome];
+        return (d && CORES_RISCO[d.risco]) || '#94a3b8';
+      }
+
       fetch('/api/distritos/')
         .then(response => response.json())
         .then(data => {
-          L.geoJSON(data, {
-            style: {
-              fillColor: '#3186cc',
-              color: '#000',
-              weight: 1,
-              fillOpacity: 0.4
+          const camada = L.geoJSON(data, {
+            style: function (feature) {
+              return {
+                fillColor: corDoDistrito(nomeDistrito(feature.properties)),
+                color: '#1e293b',
+                weight: 1.5,
+                fillOpacity: 0.45
+              };
             },
             onEachFeature: function (feature, layer) {
-              if (feature.properties && feature.properties.nome_distrito) {
-                layer.bindTooltip("Distrito: " + feature.properties.nome_distrito);
+              const nome = nomeDistrito(feature.properties);
+              if (nome) {
+                layer.bindTooltip(nome, { sticky: true });
               }
-              // Clique no distrito para atualizar os dados do painel
               layer.on('click', function () {
-                selectDistrict(feature.properties.nome_distrito);
+                selectDistrict(nome);
               });
             }
           }).addTo(map);
+
+          // enquadra o mapa nos limites reais dos distritos
+          if (camada.getBounds().isValid()) {
+            map.fitBounds(camada.getBounds(), { padding: [20, 20] });
+          }
         })
         .catch(err => console.error('Erro ao carregar distritos:', err));
-  
+
+      // Dados ainda mockados. O Recife tem 8 distritos sanitarios desde
+      // a reorganizacao de 2014 (DS VII e DS VIII foram desmembrados).
       const districtData = {
-        'DS I': { rain: '18.2 mm', cases: '12', alerts: '1' },
-        'DS II': { rain: '32.1 mm', cases: '24', alerts: '2' },
-        'DS III': { rain: '28.6 mm', cases: '19', alerts: '1' },
-        'DS IV': { rain: '14.0 mm', cases: '9', alerts: '0' },
-        'DS V': { rain: '48.9 mm', cases: '40', alerts: '2' },
-        'DS VI': { rain: '52.4 mm', cases: '38', alerts: '3' },
+        'DS I': { rain: '18.2 mm', cases: '12', alerts: '1', risco: 'baixo' },
+        'DS II': { rain: '32.1 mm', cases: '24', alerts: '2', risco: 'medio' },
+        'DS III': { rain: '28.6 mm', cases: '19', alerts: '1', risco: 'baixo' },
+        'DS IV': { rain: '14.0 mm', cases: '9', alerts: '0', risco: 'baixo' },
+        'DS V': { rain: '48.9 mm', cases: '40', alerts: '2', risco: 'alto' },
+        'DS VI': { rain: '52.4 mm', cases: '38', alerts: '3', risco: 'alto' },
+        'DS VII': { rain: '26.5 mm', cases: '17', alerts: '1', risco: 'medio' },
+        'DS VIII': { rain: '41.3 mm', cases: '28', alerts: '2', risco: 'alto' },
       };
 
       function selectDistrict(id) {
