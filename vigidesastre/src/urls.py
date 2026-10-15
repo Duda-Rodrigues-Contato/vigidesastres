@@ -5,6 +5,7 @@ from .views import (
     alertas_view,
     dashboard,
     get_distritos_geojson,
+    get_unidades_geojson,
     index,
     mapa_view,
     relatorios_view,
@@ -18,4 +19,5 @@ urlpatterns = [
     path("relatorios/", relatorios_view, name="relatorios"),
     path("acoes/", acoes_view, name="acoes"),
     path("api/distritos/", get_distritos_geojson, name="api_distritos"),
+    path("api/unidades/", get_unidades_geojson, name="api_unidades"),
 ]

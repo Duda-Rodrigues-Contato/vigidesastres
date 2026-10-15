@@ -70,16 +70,20 @@
                 </h2>
                 <div class="mt-4 space-y-3">
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
-                    <input type="checkbox" checked class="size-4 accent-blue-600"> Risco de alagamento
+                    <input type="checkbox" checked disabled class="size-4 accent-blue-600"> Risco de alagamento
+                    <span class="text-xs text-slate-400">(sem fonte)</span>
                   </label>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
-                    <input type="checkbox" checked class="size-4 accent-blue-600"> Casos epidemiológicos
+                    <input type="checkbox" checked disabled class="size-4 accent-blue-600"> Casos epidemiológicos
+                    <span class="text-xs text-slate-400">(sem fonte)</span>
                   </label>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
-                    <input type="checkbox" checked class="size-4 accent-blue-600"> Unidades de saúde
+                    <input type="checkbox" checked id="camada-unidades" class="size-4 accent-blue-600"> Unidades de saúde
+                    <span id="contador-unidades" class="text-xs text-slate-400"></span>
                   </label>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
-                    <input type="checkbox" checked class="size-4 accent-blue-600"> Acidentes peçonhentos
+                    <input type="checkbox" checked disabled class="size-4 accent-blue-600"> Acidentes peçonhentos
+                    <span class="text-xs text-slate-400">(sem fonte)</span>
                   </label>
                 </div>
               </div>
@@ -176,6 +180,67 @@
           }
         })
         .catch(err => console.error('Erro ao carregar distritos:', err));
+
+
+      // ─── Camada: unidades de saúde (CNES) ───────────────────────
+      // 410 pontos. circleMarker em vez de marker: não carrega ícone
+      // por ponto, o que mantém o mapa fluido nesse volume.
+      const CORES_TIPO = {
+        2: '#2563eb',   // UBS
+        5: '#dc2626',   // hospital geral
+        7: '#dc2626',   // hospital especializado
+        4: '#7c3aed',   // policlínica
+        20: '#ea580c',  // pronto-socorro geral
+        21: '#ea580c',  // pronto-socorro especializado
+        73: '#ea580c',  // UPA
+        42: '#0d9488',  // SAMU
+        40: '#0d9488',  // unidade móvel
+        50: '#ca8a04',  // vigilância em saúde
+      };
+
+      const camadaUnidades = L.layerGroup();
+
+      fetch('/api/unidades/')
+        .then(r => r.json())
+        .then(dados => {
+          L.geoJSON(dados, {
+            pointToLayer: function (feature, latlng) {
+              const p = feature.properties;
+              return L.circleMarker(latlng, {
+                radius: 5,
+                fillColor: CORES_TIPO[p.codigo_tipo] || '#64748b',
+                color: '#ffffff',
+                weight: 1.5,
+                fillOpacity: 0.9
+              });
+            },
+            onEachFeature: function (feature, layer) {
+              const p = feature.properties;
+              layer.bindPopup(
+                '<strong>' + (p.nome || 'Sem nome') + '</strong><br>' +
+                '<span style="color:#64748b">' + (p.tipo || '') + '</span><br>' +
+                (p.bairro && p.bairro !== 'SN' ? 'Bairro: ' + p.bairro + '<br>' : '') +
+                (p.turno ? '<small>' + p.turno + '</small>' : '')
+              );
+            }
+          }).addTo(camadaUnidades);
+
+          camadaUnidades.addTo(map);
+
+          const total = dados.features.length;
+          document.getElementById('contador-unidades').innerText = '(' + total + ')';
+        })
+        .catch(err => console.error('Erro ao carregar unidades:', err));
+
+      // liga/desliga a camada pelo checkbox
+      document.getElementById('camada-unidades')
+        .addEventListener('change', function (e) {
+          if (e.target.checked) {
+            map.addLayer(camadaUnidades);
+          } else {
+            map.removeLayer(camadaUnidades);
+          }
+        });
 
       // Dados ainda mockados. O Recife tem 8 distritos sanitarios desde
       // a reorganizacao de 2014 (DS VII e DS VIII foram desmembrados).
