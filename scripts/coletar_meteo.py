@@ -35,8 +35,11 @@ from shapely.ops import unary_union
 load_dotenv()
 
 URL = "https://api.open-meteo.com/v1/forecast"
-DIAS_PASSADOS = 7  # janela de historico recente por coleta
-DIAS_PREVISAO = 1
+DIAS_PASSADOS = 14  # alimenta o grafico de 14 dias do dashboard
+# 2 e nao 1: com forecast_days=1 a API entrega so ate o fim do dia
+# corrente (UTC), e a janela de previsao variava de 0 a 24h conforme
+# a hora da coleta. Com 2, sempre ha 24h completas a frente.
+DIAS_PREVISAO = 2
 
 BANCO = "Recife"
 COL_DISTRITOS = "DistritosSanitarios"
@@ -244,6 +247,20 @@ def calcular_zonas(pontos, respostas, registros, coletado_em):
                 1,
             )
 
+        previstas = [
+            r for r in registros
+            if r["distrito_codigo"] == referencia and r["previsao"]
+        ]
+
+        def chuva_prevista(horas):
+            # cada valor horario e a chuva da hora anterior: horas futuras
+            # T em (agora, agora + N] cobrem exatamente as proximas N horas
+            fim = agora + horas * 3600
+            return round(
+                sum(r["chuva_mm"] or 0.0 for r in previstas if r["hora"].timestamp() <= fim),
+                1,
+            )
+
         # a temperatura ja vem corrigida por altitude, entao essa sim
         # e propria de cada distrito
         distritos = []
@@ -266,7 +283,8 @@ def calcular_zonas(pontos, respostas, registros, coletado_em):
                 "nome": "Zona DS " + " · ".join(ROMANOS[c - 1] for c in codigos),
                 "distritos": distritos,
                 "chuva_24h_mm": chuva_desde(24),
-                "chuva_7d_mm": chuva_desde(24 * DIAS_PASSADOS),
+                "chuva_7d_mm": chuva_desde(24 * 7),
+                "chuva_prox_24h_mm": chuva_prevista(24),
                 "celula_lat": lat,
                 "celula_lon": lon,
                 "geometria": mapping(geometria),
@@ -295,7 +313,8 @@ def gravar_zonas(cliente, zonas):
     for z in zonas:
         print(
             f"  {z['nome']:<26} 24h {z['chuva_24h_mm']:>5} mm   "
-            f"7 dias {z['chuva_7d_mm']:>6} mm"
+            f"7 dias {z['chuva_7d_mm']:>6} mm   "
+            f"previsao 24h {z['chuva_prox_24h_mm']:>5} mm"
         )
 
 
