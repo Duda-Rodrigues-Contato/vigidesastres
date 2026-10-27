@@ -1,44 +1,19 @@
 import logging
-import os
 import statistics
 from datetime import datetime, time, timedelta
 from datetime import timezone as dt_timezone
 
-import certifi
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
-from dotenv import load_dotenv
-from pymongo import MongoClient
 from pymongo.errors import PyMongoError
-from pymongo.server_api import ServerApi
 
-from . import limiares
+from dominio import limiares
 
-load_dotenv()
+from .repositorios import arboviroses as repo_arboviroses
+from .repositorios.conexao import BANCO, get_mongo_client
 
-BANCO = "Recife"
 logger = logging.getLogger(__name__)
-
-_client = None
-
-
-def get_mongo_client():
-    """Reaproveita uma única conexão em vez de abrir uma por requisição.
-
-    Abrir MongoClient dentro da view criaria uma conexão nova a cada
-    acesso, estourando o limite do Atlas no plano gratuito.
-    """
-    global _client
-    if _client is None:
-        _client = MongoClient(
-            os.getenv("MONGO_URI"),
-            server_api=ServerApi("1"),
-            tlsCAFile=certifi.where(),
-            # padrao e 30 s: com o Atlas fora, a pagina travaria meio minuto
-            serverSelectionTimeoutMS=5000,
-        )
-    return _client
 
 
 # ─── Páginas ──────────────────────────────────────────────────────────
@@ -370,7 +345,7 @@ def get_arboviroses_bairros_geojson(request):
 
 def get_arboviroses_resumo(request):
     """Situação da semana na cidade (InfoDengue), para o painel do mapa."""
-    resumo = _resumo_arboviroses(get_mongo_client()[BANCO])
+    resumo = repo_arboviroses.resumo_semana_cidade()
     return JsonResponse({"resumo": resumo})
 
 
@@ -401,69 +376,6 @@ def get_rede_apoio_geojson(request):
     return JsonResponse({"type": "FeatureCollection", "features": features})
 
 
-# Niveis do InfoDengue, conforme a propria documentacao do sistema
-NIVEIS_INFODENGUE = {
-    1: ("Verde", "condições climáticas desfavoráveis à transmissão"),
-    2: ("Amarelo", "clima favorável ao mosquito e à transmissão"),
-    3: ("Laranja", "transmissão aumentada e sustentada"),
-    4: ("Vermelho", "incidência acima de 90% do histórico"),
-}
-
-
-def _resumo_arboviroses(banco):
-    """Dengue, chikungunya e zika na semana epidemiológica mais recente.
-
-    Usa casos_est (corrigido pelo atraso de notificação), não casos: a semana
-    mais recente sempre parece quase vazia porque as fichas ainda estão
-    chegando. O intervalo vai junto, porque a estimativa é incerta.
-    """
-    colecao = banco["ArboviroseSemanal"]
-    ultima = colecao.find_one({}, {"_id": 0, "se": 1}, sort=[("se", -1)])
-    if not ultima:
-        return None
-    se = ultima["se"]
-
-    linhas = list(colecao.find({"se": se}, {"_id": 0}))
-    if not linhas:
-        return None
-
-    def soma(campo):
-        return sum(l.get(campo) or 0 for l in linhas)
-
-    pior = max(linhas, key=lambda l: l.get("nivel") or 0)
-    nivel = pior.get("nivel")
-
-    # mesma semana do ano anterior, já consolidada, para dar contexto
-    anterior = list(colecao.find({"se": se - 100}, {"_id": 0, "casos_est": 1, "casos": 1}))
-    ano_anterior = (
-        round(sum(l.get("casos_est") or l.get("casos") or 0 for l in anterior))
-        if anterior else None
-    )
-
-    # a data da semana vem como meia-noite UTC: usar como DATA, sem converter
-    # para o fuso local - senão a semana "começaria" às 21h do dia anterior
-    inicio = linhas[0]["inicio_semana"].date()
-    por_doenca = {l["doenca"]: round(l.get("casos_est") or 0) for l in linhas}
-
-    return {
-        "semana": se % 100,
-        "ano": se // 100,
-        "inicio": inicio,
-        "fim": inicio + timedelta(days=6),
-        "estimados": round(soma("casos_est")),
-        # somar mínimos e máximos dá uma faixa conservadora (mais larga que a real)
-        "estimados_min": round(soma("casos_est_min")),
-        "estimados_max": round(soma("casos_est_max")),
-        "notificados": round(soma("casos")),
-        "por_doenca": por_doenca,
-        "nivel": nivel,
-        "nivel_nome": NIVEIS_INFODENGUE.get(nivel, ("--", ""))[0],
-        "nivel_texto": NIVEIS_INFODENGUE.get(nivel, ("", ""))[1],
-        "nivel_doenca": pior["doenca"],
-        "ano_anterior": ano_anterior,
-    }
-
-
 def dashboard(request):
     contexto = {
         "meteo": None,
@@ -482,7 +394,7 @@ def dashboard(request):
         banco = get_mongo_client()[BANCO]
         contexto["meteo"] = _resumo_meteo(banco)
         contexto["chuva_diaria"] = _chuva_diaria(banco)
-        contexto["arboviroses"] = _resumo_arboviroses(banco)
+        contexto["arboviroses"] = repo_arboviroses.resumo_semana_cidade()
 
         mare = _resumo_mare(banco)
         zonas = _zonas_para_gatilhos(banco)
