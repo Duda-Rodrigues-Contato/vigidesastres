@@ -1,0 +1,74 @@
+tipo,regional,localidade,bairro
+deslizamento,Nordeste,Córrego da Areia,Nova Descoberta
+deslizamento,Nordeste,Sítio dos Macacos,Guabiraba
+deslizamento,Nordeste,Córrego da Bica,Passarinho
+deslizamento,Nordeste,Córrego do Joaquim,Nova Descoberta
+deslizamento,Noroeste,Córrego do Caruá,Vasco da Gama
+deslizamento,Noroeste,Alto do Brasil,Alto José Bonifácio
+deslizamento,Noroeste,Córrego do Beijú,Nova Descoberta
+deslizamento,Noroeste,Alto do Cruzeiro,Nova Descoberta
+deslizamento,Norte,Cavalcante Petribú,Dois Unidos
+deslizamento,Norte,Sítio/Alto do Rosário,Dois Unidos
+deslizamento,Norte,Córrego do Deodato,Água Fria
+deslizamento,Norte,Alto do Maracanã,Dois Unidos
+deslizamento,Oeste,Barreiras,Várzea
+deslizamento,Oeste,Pantanal,Cohab
+deslizamento,Oeste,Vila dos Milagres,Barro
+deslizamento,Oeste,Jardim Monteverde,Cohab
+deslizamento,Sul,Vila do Sesi,Ibura
+deslizamento,Sul,Alto da Bela Vista,Ibura
+deslizamento,Sul,Alto da Jaqueira,Jordão
+deslizamento,Sul,Lagoa Encantada,Cohab
+deslizamento,Sul,Jordão Baixo,Jordão
+alagamento,Plana,Comunidade Rio Morno (trecho que não sofreu intervenção),Dois Unidos
+alagamento,Plana,Comunidade Beira-Rio,Beberibe
+alagamento,Plana,"Rua Antônio Tibúrcio, Rua Arão Botler, Rua Belo Horizonte, Rua Nova Betânia, Rua Pará",Cajueiro
+alagamento,Plana,Comunidade Dalva de Oliveira,Porto da Madeira
+alagamento,Plana,Ocupação Beira Rio,Porto da Madeira
+alagamento,Plana,"Rio Beberibe - Praça da Convenção - Rua Uriel de Holanda, Av. Beberibe",Beberibe
+alagamento,Plana,Favela Beira-Rio,C. do Barreto
+alagamento,Plana,Comunidade Beira-Rio General Labatut,Dois Unidos
+alagamento,Plana,Favela da Rua Guarany,Linha do Tiro
+alagamento,Plana,Vila Miguel Arraes,Porto da Madeira
+alagamento,Plana,Comunidade Vila Feliz,Cajueiro
+alagamento,Plana,Vila Vintém - por trás do Josué Pinto,Brejo Beberibe
+alagamento,Plana,Comunidade Vila Canaã / Vila Boa Vista / Vila Independência,Guabiraba
+alagamento,Plana,Comunidade Vila São João - Açude de Apipucos,Apipucos
+alagamento,Plana,Comunidade Vila Monteiro - Apipucos - Rio Capibaribe,Apipucos
+alagamento,Plana,Malvinas - Rua Des. Rodolfo Aureliano,Várzea
+alagamento,Plana,"Comunidade Padre Henrique - Rua Nelson Raposo, Rua Pe. Henrique e travessas",Várzea
+alagamento,Plana,Rua Apuleu Vieira,Várzea
+alagamento,Plana,Beco do Óleo - Av. Quinze de Novembro - Vila Arraes,Várzea
+alagamento,Plana,Vila Arraes,Várzea
+alagamento,Plana,Comunidade Novo Caxangá - Rua Engenho Poeta,Caxangá
+alagamento,Plana,Comunidade Poeta Vinícius de Morais - Rua Coronel Mário Libório e Rua Ana Lúcia,Caxangá
+alagamento,Plana,Comunidade Vila Felicidade,Caxangá
+alagamento,Plana,Comunidade Nova Morada (alguns trechos),Caxangá
+alagamento,Plana,"Av. Engenheiro Abdias de Carvalho - Av. do Forte, Faculdade Estácio de Sá, Chesf",Cordeiro / Madalena
+alagamento,Plana,"Rio Tejipió - Rua Coripós, Rua Rosário de Minas, Rua Custódia e travessas (Barraca de Ferro)",Coqueiral
+alagamento,Plana,"Rio Tejipió - Rua Guanabara, Rua Alcantara, Rua Dr. José Carneiro, Rua Professor José Rutilho",Coqueiral
+alagamento,Plana,"Rio Tejipió - Rua Sargento Wilson Viana, Rua Lourenço Bezerra e adjacências",Tejipió
+alagamento,Plana,Rio Tejipió - Rua Argina Aguiar e travessas (Loca),Tejipió
+alagamento,Plana,"Rio Tejipió - Rua Ananias Catanho, Rua Marumbi, Rua Chapecó e adjacências",Totó
+alagamento,Plana,Rio Tejipió - Comunidade Sapo Nú com Vila Camponesa,Totó
+alagamento,Plana,"Canal Guarulho - Rua Professor Zenia Guerra, Rua Bragança e adjacências",Jardim São Paulo
+alagamento,Plana,"Rua Piracicaba, Rua Italacy, Rua Realeza, Rua Real, Rua Jericó, Rua Eusébio Matos",Jardim São Paulo
+alagamento,Plana,Av. São Paulo no viaduto da Estação Werneck,Jardim São Paulo
+alagamento,Plana,Comunidade da Baixa,Jardim São Paulo
+alagamento,Plana,"Beira Canal Rodomai - Rua Alexandrita, Rua Diniz",Jardim São Paulo
+alagamento,Plana,Inferninho 1 e 2,Jardim São Paulo
+alagamento,Plana,Comunidade Cabeça de Vaca (Av. General San Martin),San Martin
+alagamento,Plana,"Colégio Visão - Av. Estância, Rua Professor José Rufino e adjacências",Estância
+alagamento,Plana,Jardim Uchôa - Rua João Paulo II - Canal das Laranjeiras,Areias
+alagamento,Plana,"Canal das Laranjeiras - Rua Santa Joana D'Arc, Rua Oiapoque, Rua Jupiata, Rua Rio Solimões",Areias
+alagamento,Plana,Comunidade da Beirinha,Jiquiá
+alagamento,Plana,Comunidade da Bezinha,Jiquiá
+alagamento,Plana,Comunidade do Vietnã - Rua Leila Felix Karam,San Martin
+alagamento,Plana,Av. Dois Rios,Ibura de Baixo
+alagamento,Plana,"Av. Dom Helder - entrada do Núcleo, Linha do Trem",Ibura de Baixo
+alagamento,Plana,"Av. Recife, Rua Alagoas, Rua Abdias Cabral de Moura, Vila Arquiteta Maria Lúcia e adjacências",Ipsep
+alagamento,Plana,Av. Mascarenhas de Moraes - DER e Banco Itaú,Imbiribeira
+alagamento,Plana,Rua Rio Pajeú - beira canal,Ibura de Baixo
+alagamento,Plana,Comunidade Borborema - Rua Cel. Aviador Roberto Pessoa Ramos,Setúbal
+alagamento,Plana,Comunidade Sitinho,Ibura de Baixo
+alagamento,Plana,"Rua Rio Moxotó, Rua Alhandra",Ibura de Baixo

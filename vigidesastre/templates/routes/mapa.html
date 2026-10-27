@@ -69,18 +69,40 @@
                   <i data-lucide="layers-3" class="text-blue-600 w-5 h-5"></i> Camadas do mapa
                 </h2>
                 <div class="mt-4 space-y-3">
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Clima</p>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
                     <input type="checkbox" id="camada-chuva" class="size-4 accent-blue-600"> Chuva estimada
                     <span class="text-xs text-slate-400">(modelo)</span>
                   </label>
+                  <p class="pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Risco</p>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
-                    <input type="checkbox" checked disabled class="size-4 accent-blue-600"> Risco de alagamento
-                    <span class="text-xs text-slate-400">(sem fonte)</span>
+                    <input type="checkbox" id="camada-risco" class="size-4 accent-blue-600"> Áreas de risco
+                    <span class="text-xs text-slate-400">(Defesa Civil)</span>
                   </label>
+                  <div id="legenda-risco" class="hidden -mt-1 ml-7 space-y-1 text-[11px] text-slate-600">
+                    <div class="flex items-center gap-2"><i class="inline-block size-3 rounded-sm" style="background:#0891b2"></i> alagamento</div>
+                    <div class="flex items-center gap-2"><i class="inline-block size-3 rounded-sm" style="background:#b45309"></i> deslizamento</div>
+                    <div class="flex items-center gap-2"><i class="inline-block size-3 rounded-sm" style="background:#be123c"></i> os dois</div>
+                    <p class="text-slate-400">Bairros que contêm áreas de risco alto ou muito alto</p>
+                  </div>
+                  <p class="pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Saúde</p>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
-                    <input type="checkbox" checked disabled class="size-4 accent-blue-600"> Casos epidemiológicos
-                    <span class="text-xs text-slate-400">(sem fonte)</span>
+                    <input type="checkbox" id="camada-arbo" class="size-4 accent-blue-600"> Arboviroses por bairro
+                    <span class="text-xs text-slate-400">(histórico)</span>
                   </label>
+                  <div id="controles-arbo" class="hidden -mt-1 ml-7 space-y-2 text-[11px] text-slate-600">
+                    <div class="flex gap-2">
+                      <select id="arbo-ano" class="rounded border border-slate-300 px-1.5 py-1 text-xs" aria-label="Ano"></select>
+                      <select id="arbo-doenca" class="rounded border border-slate-300 px-1.5 py-1 text-xs" aria-label="Doença">
+                        <option value="todas">Todas</option>
+                        <option value="dengue">Dengue</option>
+                        <option value="chikungunya">Chikungunya</option>
+                        <option value="zika">Zika</option>
+                      </select>
+                    </div>
+                    <div id="legenda-arbo" class="space-y-1"></div>
+                    <p class="text-slate-400">Casos prováveis por 10 mil habitantes, por bairro de residência</p>
+                  </div>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
                     <input type="checkbox" checked id="camada-unidades" class="size-4 accent-blue-600"> Unidades de saúde
                     <span id="contador-unidades" class="text-xs text-slate-400"></span>
@@ -89,6 +111,20 @@
                     <input type="checkbox" checked disabled class="size-4 accent-blue-600"> Acidentes peçonhentos
                     <span class="text-xs text-slate-400">(sem fonte)</span>
                   </label>
+                  <p class="pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Rede de apoio</p>
+                  <label class="flex cursor-pointer items-center gap-3 text-sm">
+                    <input type="checkbox" checked id="camada-abrigo" class="size-4 accent-blue-600"> <i class="grid size-4 place-items-center rounded-[3px] border border-white bg-green-700 text-[9px] font-bold not-italic text-white shadow">A</i> Abrigos
+                    <span id="contador-abrigo" class="text-xs text-slate-400"></span>
+                  </label>
+                  <label class="flex cursor-pointer items-center gap-3 text-sm">
+                    <input type="checkbox" id="camada-escola" class="size-4 accent-blue-600"> <i class="inline-block size-2.5 rounded-full border border-white bg-blue-800 shadow"></i> Escolas municipais
+                    <span id="contador-escola" class="text-xs text-slate-400"></span>
+                  </label>
+                  <label class="flex cursor-pointer items-center gap-3 text-sm">
+                    <input type="checkbox" id="camada-cras" class="size-4 accent-blue-600"> <i class="inline-block size-2.5 rotate-45 border border-white bg-orange-600 shadow"></i> CRAS
+                    <span id="contador-cras" class="text-xs text-slate-400"></span>
+                  </label>
+                  <p class="-mt-1 ml-7 text-[11px] text-slate-400">O cadastro de abrigos não indica se estão abertos nem a capacidade.</p>
                 </div>
               </div>
 
@@ -111,6 +147,20 @@
                       class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">Baixo</span>
                   </div>
                 </div>
+              </div>
+
+              <div id="card-infodengue" class="hidden rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 class="flex items-center gap-2 font-bold text-slate-900">Arboviroses agora
+                  <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-800">InfoDengue</span>
+                </h2>
+                <p class="mt-1 text-[11px] text-slate-500">Recife inteiro · semana mais recente</p>
+                <p class="mt-3 text-2xl font-bold text-slate-900"><span id="info-estimados">--</span> <small class="text-sm font-medium text-slate-500">casos estimados</small></p>
+                <p id="info-faixa" class="text-xs text-slate-500"></p>
+                <p class="mt-2 flex items-center gap-2 text-xs text-slate-600">
+                  <span id="info-nivel" class="rounded-full px-2 py-0.5 text-[11px] font-semibold"></span>
+                  <span id="info-semana"></span>
+                </p>
+                <p class="mt-2 text-[11px] text-slate-400">Dado municipal: não varia por bairro. O mapa mostra o histórico por bairro.</p>
               </div>
 
               <div class="rounded-md bg-blue-50 p-4 text-xs leading-5 text-blue-700 border border-blue-100">
@@ -165,6 +215,35 @@
         return document.getElementById('camada-chuva').checked;
       }
 
+      function riscoLigado() {
+        return document.getElementById('camada-risco').checked;
+      }
+
+      function arboLigado() {
+        return document.getElementById('camada-arbo').checked;
+      }
+
+      // as camadas de risco e de arboviroses pintam os mesmos bairros:
+      // ligar uma desliga a outra, para os polígonos não se sobreporem
+      function desligar(id) {
+        const caixa = document.getElementById(id);
+        if (caixa.checked) {
+          caixa.checked = false;
+          caixa.dispatchEvent(new Event('change'));
+        }
+      }
+
+      // com uma camada tematica por cima, os distritos viram so contorno
+      function distritosEmContorno() {
+        return chuvaLigada() || riscoLigado() || arboLigado();
+      }
+
+      // o painel "Nivel de risco" descreve a cor dos distritos, que some
+      // quando eles viram contorno
+      function atualizarPainelRisco() {
+        document.getElementById('painel-risco').style.opacity = distritosEmContorno() ? '0.4' : '1';
+      }
+
       function formatarMm(mm) {
         return mm.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' mm';
       }
@@ -177,7 +256,7 @@
       //    para ligar visualmente o card ao poligono
       function estiloDistrito(feature) {
         const selecionado = nomeDistrito(feature.properties) === distritoSelecionado;
-        if (chuvaLigada()) {
+        if (distritosEmContorno()) {
           return {
             fillColor: COR_SELECAO,
             fillOpacity: selecionado ? 0.15 : 0,
@@ -201,10 +280,11 @@
           weight: 4,
           color: '#0f172a',
           dashArray: null,
-          fillColor: chuvaLigada() ? '#0f172a' : layer.options.fillColor,
-          fillOpacity: chuvaLigada() ? 0.18 : 0.7
+          fillColor: distritosEmContorno() ? '#0f172a' : layer.options.fillColor,
+          fillOpacity: distritosEmContorno() ? 0.18 : 0.7
         });
-        layer.bringToFront();
+        // com o risco ligado, nao puxa o distrito para cima: esconderia os bairros
+        if (!riscoLigado() && !arboLigado()) layer.bringToFront();
       }
 
       function redesenharDistritos() {
@@ -393,9 +473,262 @@
             legendaChuva.remove();
           }
           // o painel de risco descreve a cor dos distritos, que some com a chuva ligada
-          document.getElementById('painel-risco').style.opacity = e.target.checked ? '0.4' : '1';
+          atualizarPainelRisco();
           redesenharDistritos();
         });
+
+
+      // ─── Camada: áreas de risco (Defesa Civil) ──────────────────────
+      // Fonte: Plano de Contingência 2024 da SEDEC. O plano identifica
+      // comunidades DENTRO dos bairros: o bairro aparece porque contém
+      // áreas de risco alto/muito alto, não porque esteja todo em risco.
+      const CORES_RISCO_AREA = { alagamento: '#0891b2', deslizamento: '#b45309', ambos: '#be123c' };
+
+      function corRisco(tipos) {
+        return tipos.length > 1 ? CORES_RISCO_AREA.ambos : CORES_RISCO_AREA[tipos[0]];
+      }
+
+      function listaHtml(titulo, itens) {
+        if (!itens.length) return '';
+        return '<p style="margin:8px 0 2px;font-weight:600">' + titulo + ' (' + itens.length + ')</p>' +
+          '<ul style="margin:0;padding-left:16px;max-height:140px;overflow:auto">' +
+          itens.map(i => '<li>' + i + '</li>').join('') + '</ul>';
+      }
+
+      const camadaRisco = L.layerGroup();
+
+      fetch('/api/areas-risco/')
+        .then(r => r.json())
+        .then(dados => {
+          L.geoJSON(dados, {
+            style: f => ({
+              fillColor: corRisco(f.properties.tipos),
+              color: corRisco(f.properties.tipos),
+              weight: 1.5,
+              fillOpacity: 0.35
+            }),
+            onEachFeature: function (feature, layer) {
+              const p = feature.properties;
+              layer.bindTooltip('<strong>' + p.bairro + '</strong><br>' + p.total_areas +
+                (p.total_areas === 1 ? ' área' : ' áreas') + ' de risco alto ou muito alto', { sticky: true });
+              layer.bindPopup(
+                '<div style="max-width:280px;font-size:12px">' +
+                '<strong style="font-size:14px">' + p.bairro + '</strong>' +
+                '<p style="margin:4px 0;color:#64748b">Contém áreas de risco alto ou muito alto (R3/R4). ' +
+                'O risco está nas áreas listadas, não no bairro inteiro.</p>' +
+                listaHtml('Deslizamento', p.deslizamento) +
+                listaHtml('Alagamento', p.alagamento) +
+                '<p style="margin:8px 0 0;color:#94a3b8;font-size:11px">' + p.fonte + '</p></div>'
+              );
+            }
+          }).addTo(camadaRisco);
+        })
+        .catch(err => console.error('Erro ao carregar áreas de risco:', err));
+
+      document.getElementById('camada-risco')
+        .addEventListener('change', function (e) {
+          if (e.target.checked) {
+            desligar('camada-arbo');
+            camadaRisco.addTo(map);
+            // por cima dos distritos, para o clique abrir o detalhe do bairro...
+            camadaRisco.eachLayer(l => l.bringToFront && l.bringToFront());
+            // ...mas por baixo das unidades de saúde, que continuam clicáveis
+            if (map.hasLayer(camadaUnidades)) {
+              camadaUnidades.eachLayer(l => l.bringToFront && l.bringToFront());
+            }
+          } else {
+            map.removeLayer(camadaRisco);
+          }
+          document.getElementById('legenda-risco').classList.toggle('hidden', !e.target.checked);
+          atualizarPainelRisco();
+          redesenharDistritos();
+        });
+
+
+      // ─── Camada: arboviroses por bairro (SINAN, histórico anual) ────
+      // Incidência = casos prováveis (notificados exceto descartados) por
+      // 10 mil habitantes, com a população do Censo 2022. O arquivo mais
+      // recente da prefeitura é anual; a semana atual vem do InfoDengue.
+      const CORES_ARBO = ['#ffffb2', '#fecc5c', '#fd8d3c', '#f03b20', '#bd0026'];
+      const camadaArbo = L.layerGroup();
+      let quebrasArbo = [];
+
+      const fmt1 = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+      // quebras por quantis: cada cor reúne ~1/5 dos bairros. Valores de
+      // incidência variam muito de um ano para outro (epidemias), então
+      // quebras fixas deixariam anos inteiros de uma cor só.
+      function calcularQuebras(valores) {
+        const v = valores.filter(x => x !== null).sort((a, b) => a - b);
+        if (!v.length || v[0] === v[v.length - 1]) return [];
+        const q = [0.2, 0.4, 0.6, 0.8].map(p => v[Math.floor(p * (v.length - 1))]);
+        return [...new Set(q)];
+      }
+
+      function corArbo(valor) {
+        if (valor === null) return '#e2e8f0';
+        let i = 0;
+        while (i < quebrasArbo.length && valor > quebrasArbo[i]) i++;
+        return CORES_ARBO[Math.min(i, CORES_ARBO.length - 1)];
+      }
+
+      function desenharLegendaArbo(maximo) {
+        const limites = [0, ...quebrasArbo, maximo];
+        const div = document.getElementById('legenda-arbo');
+        if (limites.length < 2 || maximo === 0) {
+          div.innerHTML = '<p>Nenhum caso provável no período selecionado.</p>';
+          return;
+        }
+        div.innerHTML = limites.slice(0, -1).map((ini, i) =>
+          '<div class="flex items-center gap-2"><i class="inline-block size-3 rounded-sm" style="background:' +
+          CORES_ARBO[i] + '"></i> ' + fmt1(ini) + ' a ' + fmt1(limites[i + 1]) + '</div>'
+        ).join('');
+      }
+
+      function carregarArbo() {
+        const ano = document.getElementById('arbo-ano').value;
+        const doenca = document.getElementById('arbo-doenca').value;
+        const params = new URLSearchParams({ doenca });
+        if (ano) params.set('ano', ano);
+
+        fetch('/api/arboviroses-bairros/?' + params)
+          .then(r => r.json())
+          .then(dados => {
+            // preenche a lista de anos na primeira carga
+            const seletor = document.getElementById('arbo-ano');
+            if (!seletor.options.length && dados.anos) {
+              dados.anos.slice().reverse().forEach(a => seletor.add(new Option(a, a)));
+              seletor.value = dados.ano;
+            }
+
+            const valores = dados.features.map(f => f.properties.incidencia_10k);
+            quebrasArbo = calcularQuebras(valores);
+            desenharLegendaArbo(Math.max(0, ...valores.filter(x => x !== null)));
+
+            camadaArbo.clearLayers();
+            L.geoJSON(dados, {
+              style: f => ({
+                fillColor: corArbo(f.properties.incidencia_10k),
+                color: '#7c2d12', weight: 0.8, fillOpacity: 0.7
+              }),
+              onEachFeature: function (feature, layer) {
+                const p = feature.properties;
+                const nomes = { dengue: 'Dengue', chikungunya: 'Chikungunya', zika: 'Zika' };
+                const linhas = Object.entries(p.por_doenca)
+                  .map(([d, n]) => '<li>' + nomes[d] + ': ' + n.toLocaleString('pt-BR') + '</li>').join('');
+                layer.bindTooltip('<strong>' + p.bairro + '</strong><br>' +
+                  (p.incidencia_10k === null ? 'sem dado' : fmt1(p.incidencia_10k) + ' por 10 mil hab.'), { sticky: true });
+                layer.bindPopup(
+                  '<div style="font-size:12px;max-width:260px">' +
+                  '<strong style="font-size:14px">' + p.bairro + '</strong> · ' + dados.ano +
+                  '<p style="margin:6px 0 2px;font-size:20px;font-weight:700">' +
+                  (p.incidencia_10k === null ? '--' : fmt1(p.incidencia_10k)) +
+                  ' <span style="font-size:12px;font-weight:400;color:#64748b">por 10 mil hab.</span></p>' +
+                  '<p style="margin:0;color:#64748b">' + p.provaveis.toLocaleString('pt-BR') + ' casos prováveis · ' +
+                  p.populacao.toLocaleString('pt-BR') + ' habitantes</p>' +
+                  '<ul style="margin:6px 0 0;padding-left:16px">' + linhas + '</ul>' +
+                  '<p style="margin:8px 0 0;color:#94a3b8;font-size:11px">Casos prováveis = notificados exceto descartados, ' +
+                  'por bairro de residência. ' + dados.fonte + '.</p></div>'
+                );
+              }
+            }).addTo(camadaArbo);
+
+            if (map.hasLayer(camadaArbo)) {
+              camadaArbo.eachLayer(l => l.bringToFront && l.bringToFront());
+              if (map.hasLayer(camadaUnidades)) camadaUnidades.eachLayer(l => l.bringToFront && l.bringToFront());
+            }
+          })
+          .catch(err => console.error('Erro ao carregar arboviroses:', err));
+      }
+
+      document.getElementById('camada-arbo')
+        .addEventListener('change', function (e) {
+          if (e.target.checked) {
+            desligar('camada-risco');
+            camadaArbo.addTo(map);
+            carregarArbo();
+          } else {
+            map.removeLayer(camadaArbo);
+          }
+          document.getElementById('controles-arbo').classList.toggle('hidden', !e.target.checked);
+          atualizarPainelRisco();
+          redesenharDistritos();
+        });
+      document.getElementById('arbo-ano').addEventListener('change', carregarArbo);
+      document.getElementById('arbo-doenca').addEventListener('change', carregarArbo);
+
+      // ─── Card: arboviroses agora (InfoDengue, município) ────────────
+      const CORES_NIVEL = { 1: ['#dcfce7', '#166534'], 2: ['#fef9c3', '#854d0e'], 3: ['#ffedd5', '#9a3412'], 4: ['#fee2e2', '#991b1b'] };
+      fetch('/api/arboviroses-resumo/')
+        .then(r => r.json())
+        .then(({ resumo }) => {
+          if (!resumo) return;
+          const dm = s => s.slice(8, 10) + '/' + s.slice(5, 7);
+          document.getElementById('info-estimados').innerText = resumo.estimados.toLocaleString('pt-BR');
+          document.getElementById('info-faixa').innerText =
+            'entre ' + resumo.estimados_min + ' e ' + resumo.estimados_max + ' · ' + resumo.notificados + ' já notificados';
+          const nivel = document.getElementById('info-nivel');
+          const [fundo, texto] = CORES_NIVEL[resumo.nivel] || ['#f1f5f9', '#334155'];
+          nivel.innerText = resumo.nivel_nome;
+          nivel.style.background = fundo; nivel.style.color = texto;
+          nivel.title = resumo.nivel_texto;
+          document.getElementById('info-semana').innerText =
+            'SE ' + resumo.semana + ' · ' + dm(resumo.inicio) + ' a ' + dm(resumo.fim);
+          document.getElementById('card-infodengue').classList.remove('hidden');
+        })
+        .catch(err => console.error('Erro ao carregar o resumo do InfoDengue:', err));
+
+
+      // ─── Rede de apoio: abrigos, escolas e CRAS ─────────────────────
+      // L.marker com divIcon vive no markerPane, acima de todos os
+      // polígonos: nenhuma combinação de camadas esconde um abrigo.
+      const REDE = {
+        abrigo: { rotulo: 'Abrigo', html: '<div style="width:18px;height:18px;border-radius:3px;background:#15803d;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);color:#fff;font:700 10px/14px sans-serif;text-align:center">A</div>', tamanho: 18 },
+        escola: { rotulo: 'Escola municipal', html: '<div style="width:10px;height:10px;border-radius:50%;background:#1e40af;border:1.5px solid #fff;box-shadow:0 1px 2px rgba(0,0,0,.4)"></div>', tamanho: 10 },
+        cras:   { rotulo: 'CRAS', html: '<div style="width:10px;height:10px;transform:rotate(45deg);background:#ea580c;border:1.5px solid #fff;box-shadow:0 1px 2px rgba(0,0,0,.4)"></div>', tamanho: 10 }
+      };
+      const camadasRede = { abrigo: L.layerGroup(), escola: L.layerGroup(), cras: L.layerGroup() };
+
+      function popupRede(p) {
+        const linhas = Object.entries(p.detalhe || {})
+          .filter(([k]) => !['CODESCOLA', 'CEP'].includes(k))
+          .map(([k, v]) => '<li>' + k.replaceAll('_', ' ').toLowerCase() + ': ' + v + '</li>').join('');
+        return '<div style="font-size:12px;max-width:260px">' +
+          '<p style="margin:0;color:#64748b;font-size:11px">' + REDE[p.tipo].rotulo + '</p>' +
+          '<strong style="font-size:14px">' + p.nome + '</strong>' +
+          '<p style="margin:4px 0">' + [p.endereco, p.bairro].filter(Boolean).join(' · ') + '</p>' +
+          (linhas ? '<ul style="margin:4px 0;padding-left:16px">' + linhas + '</ul>' : '') +
+          (p.tipo === 'abrigo' ? '<p style="margin:6px 0 0;color:#b45309;font-size:11px">Cadastro: não indica se está aberto nem a capacidade.</p>' : '') +
+          '<p style="margin:6px 0 0;color:#94a3b8;font-size:11px">' + p.fonte + '</p></div>';
+      }
+
+      fetch('/api/rede-apoio/')
+        .then(r => r.json())
+        .then(dados => {
+          const contagem = { abrigo: 0, escola: 0, cras: 0 };
+          dados.features.forEach(f => {
+            const p = f.properties, cfg = REDE[p.tipo];
+            if (!cfg) return;
+            const [lon, lat] = f.geometry.coordinates;
+            L.marker([lat, lon], {
+              icon: L.divIcon({ className: '', html: cfg.html, iconSize: [cfg.tamanho, cfg.tamanho], iconAnchor: [cfg.tamanho / 2, cfg.tamanho / 2] }),
+              title: p.nome,
+              zIndexOffset: p.tipo === 'abrigo' ? 1000 : 0  // abrigo por cima das escolas
+            }).bindPopup(popupRede(p)).addTo(camadasRede[p.tipo]);
+            contagem[p.tipo]++;
+          });
+          Object.entries(contagem).forEach(([tipo, n]) => {
+            document.getElementById('contador-' + tipo).innerText = '(' + n + ')';
+            if (document.getElementById('camada-' + tipo).checked) camadasRede[tipo].addTo(map);
+          });
+        })
+        .catch(err => console.error('Erro ao carregar a rede de apoio:', err));
+
+      Object.keys(camadasRede).forEach(tipo => {
+        document.getElementById('camada-' + tipo).addEventListener('change', e => {
+          if (e.target.checked) camadasRede[tipo].addTo(map); else map.removeLayer(camadasRede[tipo]);
+        });
+      });
 
       // Dados ainda mockados. O Recife tem 8 distritos sanitarios desde
       // a reorganizacao de 2014 (DS VII e DS VIII foram desmembrados).

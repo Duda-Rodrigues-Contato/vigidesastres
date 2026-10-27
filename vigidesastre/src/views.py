@@ -284,6 +284,186 @@ def _proximas_48h(banco, zonas, mare):
     }
 
 
+def get_areas_risco_geojson(request):
+    """Bairros que contêm áreas de risco alto ou muito alto (R3/R4).
+
+    Fonte: Plano de Contingência 2024 da Defesa Civil do Recife. O plano
+    identifica comunidades DENTRO dos bairros; o bairro na camada indica que
+    ele contém essas áreas, não que esteja todo em risco.
+    """
+    colecao = get_mongo_client()[BANCO]["AreasRisco"]
+    features = [
+        {
+            "type": "Feature",
+            "geometry": a["geometria"],
+            "properties": {
+                "bairro": a["bairro"],
+                "tipos": a["tipos"],
+                "alagamento": a["alagamento"],
+                "deslizamento": a["deslizamento"],
+                "total_areas": a["total_areas"],
+                "nivel": a["nivel"],
+                "fonte": a["fonte"],
+            },
+        }
+        for a in colecao.find({}, {"_id": 0})
+    ]
+    return JsonResponse({"type": "FeatureCollection", "features": features})
+
+
+DOENCAS_ARBO = ("dengue", "chikungunya", "zika")
+
+
+def get_arboviroses_bairros_geojson(request):
+    """Casos prováveis e incidência por bairro, num ano. Histórico: o arquivo
+    mais recente da prefeitura é de 2025; a semana atual vem do InfoDengue.
+
+    ?ano=2025 (padrão: o mais recente)  ?doenca=dengue|chikungunya|zika|todas
+    """
+    banco = get_mongo_client()[BANCO]
+    anos = sorted(banco["ArboviroseBairroAnual"].distinct("ano"))
+    if not anos:
+        return JsonResponse({"type": "FeatureCollection", "features": [], "anos": []})
+
+    try:
+        ano = int(request.GET.get("ano", anos[-1]))
+    except ValueError:
+        return JsonResponse({"erro": "ano inválido"}, status=400)
+    doenca = request.GET.get("doenca", "todas")
+    doencas = DOENCAS_ARBO if doenca == "todas" else (doenca,)
+    if not set(doencas) <= set(DOENCAS_ARBO):
+        return JsonResponse({"erro": "doença inválida"}, status=400)
+
+    por_bairro = {}
+    for r in banco["ArboviroseBairroAnual"].find(
+        {"ano": ano, "doenca": {"$in": list(doencas)}}, {"_id": 0}
+    ):
+        b = por_bairro.setdefault(r["chave"], {"populacao": r["populacao"], "por_doenca": {}})
+        b["por_doenca"][r["doenca"]] = r["provaveis"]
+
+    features = []
+    for bairro in banco["Bairros"].find({}, {"_id": 0}):
+        dados = por_bairro.get(bairro["chave"])
+        if not dados:
+            continue
+        provaveis = sum(dados["por_doenca"].values())
+        populacao = dados["populacao"]
+        features.append({
+            "type": "Feature",
+            "geometry": bairro["geometria"],
+            "properties": {
+                "bairro": bairro["nome"],
+                "populacao": populacao,
+                "provaveis": provaveis,
+                "por_doenca": dados["por_doenca"],
+                "incidencia_10k": round(provaveis / populacao * 10_000, 1) if populacao else None,
+            },
+        })
+
+    return JsonResponse({
+        "type": "FeatureCollection",
+        "ano": ano, "anos": anos, "doenca": doenca,
+        "fonte": "SINAN, via Portal de Dados Abertos do Recife; população: IBGE, Censo 2022",
+        "features": features,
+    })
+
+
+def get_arboviroses_resumo(request):
+    """Situação da semana na cidade (InfoDengue), para o painel do mapa."""
+    resumo = _resumo_arboviroses(get_mongo_client()[BANCO])
+    return JsonResponse({"resumo": resumo})
+
+
+TIPOS_REDE = ("abrigo", "escola", "cras")
+
+
+def get_rede_apoio_geojson(request):
+    """Abrigos, escolas e CRAS como pontos. ?tipo=abrigo|escola|cras (opcional)."""
+    tipo = request.GET.get("tipo")
+    if tipo and tipo not in TIPOS_REDE:
+        return JsonResponse({"erro": "tipo inválido"}, status=400)
+    filtro = {"tipo": tipo} if tipo else {}
+    features = [
+        {
+            "type": "Feature",
+            "geometry": p["localizacao"],
+            "properties": {
+                "tipo": p["tipo"],
+                "nome": p["nome"],
+                "bairro": p["bairro"],
+                "endereco": p["endereco"],
+                "detalhe": p.get("detalhe", {}),
+                "fonte": p["fonte"],
+            },
+        }
+        for p in get_mongo_client()[BANCO]["RedeApoio"].find(filtro, {"_id": 0})
+    ]
+    return JsonResponse({"type": "FeatureCollection", "features": features})
+
+
+# Niveis do InfoDengue, conforme a propria documentacao do sistema
+NIVEIS_INFODENGUE = {
+    1: ("Verde", "condições climáticas desfavoráveis à transmissão"),
+    2: ("Amarelo", "clima favorável ao mosquito e à transmissão"),
+    3: ("Laranja", "transmissão aumentada e sustentada"),
+    4: ("Vermelho", "incidência acima de 90% do histórico"),
+}
+
+
+def _resumo_arboviroses(banco):
+    """Dengue, chikungunya e zika na semana epidemiológica mais recente.
+
+    Usa casos_est (corrigido pelo atraso de notificação), não casos: a semana
+    mais recente sempre parece quase vazia porque as fichas ainda estão
+    chegando. O intervalo vai junto, porque a estimativa é incerta.
+    """
+    colecao = banco["ArboviroseSemanal"]
+    ultima = colecao.find_one({}, {"_id": 0, "se": 1}, sort=[("se", -1)])
+    if not ultima:
+        return None
+    se = ultima["se"]
+
+    linhas = list(colecao.find({"se": se}, {"_id": 0}))
+    if not linhas:
+        return None
+
+    def soma(campo):
+        return sum(l.get(campo) or 0 for l in linhas)
+
+    pior = max(linhas, key=lambda l: l.get("nivel") or 0)
+    nivel = pior.get("nivel")
+
+    # mesma semana do ano anterior, já consolidada, para dar contexto
+    anterior = list(colecao.find({"se": se - 100}, {"_id": 0, "casos_est": 1, "casos": 1}))
+    ano_anterior = (
+        round(sum(l.get("casos_est") or l.get("casos") or 0 for l in anterior))
+        if anterior else None
+    )
+
+    # a data da semana vem como meia-noite UTC: usar como DATA, sem converter
+    # para o fuso local - senão a semana "começaria" às 21h do dia anterior
+    inicio = linhas[0]["inicio_semana"].date()
+    por_doenca = {l["doenca"]: round(l.get("casos_est") or 0) for l in linhas}
+
+    return {
+        "semana": se % 100,
+        "ano": se // 100,
+        "inicio": inicio,
+        "fim": inicio + timedelta(days=6),
+        "estimados": round(soma("casos_est")),
+        # somar mínimos e máximos dá uma faixa conservadora (mais larga que a real)
+        "estimados_min": round(soma("casos_est_min")),
+        "estimados_max": round(soma("casos_est_max")),
+        "notificados": round(soma("casos")),
+        "por_doenca": por_doenca,
+        "nivel": nivel,
+        "nivel_nome": NIVEIS_INFODENGUE.get(nivel, ("--", ""))[0],
+        "nivel_texto": NIVEIS_INFODENGUE.get(nivel, ("", ""))[1],
+        "nivel_doenca": pior["doenca"],
+        "ano_anterior": ano_anterior,
+    }
+
+
 def dashboard(request):
     contexto = {
         "meteo": None,
@@ -291,6 +471,7 @@ def dashboard(request):
         "total_distritos": None,
         "total_unidades": None,
         "mare": None,
+        "arboviroses": None,
         "alertas": None,
         "proximas_48h": None,
         "erro_banco": False,
@@ -301,6 +482,7 @@ def dashboard(request):
         banco = get_mongo_client()[BANCO]
         contexto["meteo"] = _resumo_meteo(banco)
         contexto["chuva_diaria"] = _chuva_diaria(banco)
+        contexto["arboviroses"] = _resumo_arboviroses(banco)
 
         mare = _resumo_mare(banco)
         zonas = _zonas_para_gatilhos(banco)
