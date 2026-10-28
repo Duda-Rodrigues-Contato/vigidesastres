@@ -267,7 +267,6 @@ def get_areas_risco_geojson(request):
     identifica comunidades DENTRO dos bairros; o bairro na camada indica que
     ele contém essas áreas, não que esteja todo em risco.
     """
-    colecao = get_mongo_client()[BANCO]["AreasRisco"]
     features = [
         {
             "type": "Feature",
@@ -282,7 +281,7 @@ def get_areas_risco_geojson(request):
                 "fonte": a["fonte"],
             },
         }
-        for a in colecao.find({}, {"_id": 0})
+        for a in repo_referencia.areas_risco()
     ]
     return JsonResponse({"type": "FeatureCollection", "features": features})
 

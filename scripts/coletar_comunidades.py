@@ -31,7 +31,9 @@ from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 from shapely.geometry import mapping, shape
 
-from seed_areas_risco import APELIDOS, normalizar
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # para importar etl/ e dominio/
+from dominio.bairros import APELIDOS_PLANO as APELIDOS  # noqa: E402
+from etl.comum.texto import normalizar  # noqa: E402
 
 load_dotenv()
 

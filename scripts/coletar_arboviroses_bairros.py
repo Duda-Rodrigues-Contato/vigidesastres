@@ -39,8 +39,11 @@ from pymongo.server_api import ServerApi
 from shapely.geometry import mapping, shape
 from shapely.ops import unary_union
 
-# funções já testadas na carga das áreas de risco
-from seed_areas_risco import baixar_bairros, campo_do_nome, normalizar, para_latlon
+from pathlib import Path
+# funções de bairros compartilhadas com o ETL novo (antes em seed_areas_risco.py)
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # para importar etl/ e dominio/
+from etl.comum.bairros import baixar_bairros, campo_do_nome, para_latlon  # noqa: E402
+from etl.comum.texto import normalizar  # noqa: E402
 
 load_dotenv()
 
