@@ -15,6 +15,7 @@ import sys
 
 from etl.destinos import obter_destino
 from etl.fontes.areas_risco import AreasRisco
+from etl.fontes.avisos_inmet import AvisosInmet
 from etl.fontes.cemaden import Cemaden
 from etl.fontes.cnes import Cnes
 from etl.fontes.comunidades import Comunidades
@@ -26,8 +27,7 @@ from etl.fontes.rede_apoio import RedeApoio
 
 # Registro das fontes já migradas para o padrão novo. As demais ainda
 # rodam pelos scripts antigos em scripts/ até serem migradas.
-FONTES = {c.nome: c for c in [InfoDengue, DefesaCivil, Distritos, AreasRisco, Comunidades, RedeApoio, Cnes, Mare, Cemaden]}
-
+FONTES = {c.nome: c for c in [InfoDengue, DefesaCivil, Distritos, AreasRisco, Comunidades, RedeApoio, Cnes, Mare, Cemaden, AvisosInmet]}
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="python -m etl", description="ETL do Vigidesastres")
