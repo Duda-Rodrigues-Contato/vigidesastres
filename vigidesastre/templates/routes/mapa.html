@@ -85,6 +85,19 @@
                     <div class="flex items-center gap-2"><i class="inline-block size-3 rounded-sm" style="background:#be123c"></i> os dois</div>
                     <p class="text-slate-400">Bairros que contêm áreas de risco alto ou muito alto</p>
                   </div>
+                  <label class="flex cursor-pointer items-center gap-3 text-sm">
+                    <input type="checkbox" id="camada-com" class="size-4 accent-blue-600"> Comunidades
+                    <span class="text-xs text-slate-400">(2014)</span>
+                  </label>
+                  <div id="controles-com" class="hidden -mt-1 ml-7 space-y-2 text-[11px] text-slate-600">
+                    <select id="com-indicador" class="rounded border border-slate-300 px-1.5 py-1 text-xs" aria-label="Indicador">
+                      <option value="alagamento">Alagamento</option>
+                      <option value="deslizamento">Deslizamento</option>
+                      <option value="indice">Precariedade (índice)</option>
+                    </select>
+                    <div id="legenda-com" class="space-y-1"></div>
+                    <p class="text-slate-400">Comunidades de Interesse Social, levantamento de 2014. Nota 0 a 10, maior = pior.</p>
+                  </div>
                   <p class="pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Saúde</p>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
                     <input type="checkbox" id="camada-arbo" class="size-4 accent-blue-600"> Arboviroses por bairro
@@ -235,7 +248,7 @@
 
       // com uma camada tematica por cima, os distritos viram so contorno
       function distritosEmContorno() {
-        return chuvaLigada() || riscoLigado() || arboLigado();
+        return chuvaLigada() || riscoLigado() || arboLigado() || comLigado();
       }
 
       // o painel "Nivel de risco" descreve a cor dos distritos, que some
@@ -284,7 +297,7 @@
           fillOpacity: distritosEmContorno() ? 0.18 : 0.7
         });
         // com o risco ligado, nao puxa o distrito para cima: esconderia os bairros
-        if (!riscoLigado() && !arboLigado()) layer.bringToFront();
+        if (!riscoLigado() && !arboLigado() && !comLigado()) layer.bringToFront();
       }
 
       function redesenharDistritos() {
@@ -529,6 +542,7 @@
         .addEventListener('change', function (e) {
           if (e.target.checked) {
             desligar('camada-arbo');
+            desligar('camada-com');
             camadaRisco.addTo(map);
             // por cima dos distritos, para o clique abrir o detalhe do bairro...
             camadaRisco.eachLayer(l => l.bringToFront && l.bringToFront());
@@ -645,6 +659,7 @@
         .addEventListener('change', function (e) {
           if (e.target.checked) {
             desligar('camada-risco');
+            desligar('camada-com');
             camadaArbo.addTo(map);
             carregarArbo();
           } else {
@@ -729,6 +744,66 @@
           if (e.target.checked) camadasRede[tipo].addTo(map); else map.removeLayer(camadasRede[tipo]);
         });
       });
+
+
+      // ─── Camada: comunidades de interesse social (2014) ─────────────
+      const CORES_COM = ['#fff7bc', '#fee391', '#fec44f', '#ec7014', '#993404'];
+      const NOMES_IND = { IND_ALAGAM: 'alagamento', DENS_ESCOR: 'deslizamento', DRENAGEM: 'drenagem (deficiência)',
+        PAVIMENTAC: 'pavimentação (deficiência)', ESGOTAMENT: 'esgotamento', COLETA_LIX: 'coleta de lixo',
+        Indice_COM: 'índice composto' };
+      const camadaCom = L.layerGroup();
+      let quebrasCom = [];
+
+      function comLigado() { return document.getElementById('camada-com').checked; }
+
+      // zero = sem indicação; as cores dividem só as comunidades com nota
+      function corCom(v) {
+        if (v === null || v === undefined) return '#e2e8f0';
+        if (v <= 0) return '#f8fafc';
+        let i = 0;
+        while (i < quebrasCom.length && v > quebrasCom[i]) i++;
+        return CORES_COM[Math.min(i, CORES_COM.length - 1)];
+      }
+
+      function carregarCom() {
+        const ind = document.getElementById('com-indicador').value;
+        fetch('/api/comunidades/?indicador=' + ind).then(r => r.json()).then(dados => {
+          const positivos = dados.features.map(f => f.properties.valor).filter(v => v > 0);
+          quebrasCom = calcularQuebras(positivos);
+          const limites = [0, ...quebrasCom, Math.max(0, ...positivos)];
+          document.getElementById('legenda-com').innerHTML =
+            '<div class="flex items-center gap-2"><i class="inline-block size-3 rounded-sm border border-slate-300" style="background:#f8fafc"></i> 0 (sem indicação)</div>' +
+            limites.slice(0, -1).map((ini, i) => '<div class="flex items-center gap-2"><i class="inline-block size-3 rounded-sm" style="background:' +
+              CORES_COM[i] + '"></i> ' + fmt1(ini) + ' a ' + fmt1(limites[i + 1]) + '</div>').join('');
+          camadaCom.clearLayers();
+          L.geoJSON(dados, {
+            style: f => ({ fillColor: corCom(f.properties.valor), color: '#78350f', weight: 0.6, fillOpacity: 0.75 }),
+            onEachFeature: (f, layer) => {
+              const p = f.properties;
+              const linhas = Object.entries(NOMES_IND).filter(([k]) => p.indicadores[k] !== null && p.indicadores[k] !== undefined)
+                .map(([k, n]) => '<li>' + n + ': ' + fmt1(p.indicadores[k]) + '</li>').join('');
+              layer.bindTooltip('<strong>' + p.nome + '</strong><br>' + (p.valor === null ? 'sem dado' : fmt1(p.valor) + ' de 10'), { sticky: true });
+              layer.bindPopup('<div style="font-size:12px;max-width:260px"><strong style="font-size:14px">' + p.nome + '</strong>' +
+                '<p style="margin:2px 0;color:#64748b">' + p.bairro + (p.populacao_2014 ? ' · ' + p.populacao_2014.toLocaleString('pt-BR') + ' hab. (2014)' : '') + '</p>' +
+                (p.precariedade ? '<p style="margin:4px 0">' + p.precariedade + '</p>' : '') +
+                '<ul style="margin:4px 0;padding-left:16px">' + linhas + '</ul>' +
+                '<p style="margin:6px 0 0;color:#94a3b8;font-size:11px">Notas de 0 a 10, maior = pior. Levantamento de 2014: retrato da estrutura, não da população atual.</p></div>');
+            }
+          }).addTo(camadaCom);
+          if (map.hasLayer(camadaCom) && map.hasLayer(camadaUnidades)) {
+            camadaUnidades.eachLayer(l => l.bringToFront && l.bringToFront());
+          }
+        }).catch(err => console.error('Erro ao carregar comunidades:', err));
+      }
+
+      document.getElementById('camada-com').addEventListener('change', e => {
+        if (e.target.checked) { desligar('camada-risco'); desligar('camada-arbo'); camadaCom.addTo(map); carregarCom(); }
+        else map.removeLayer(camadaCom);
+        document.getElementById('controles-com').classList.toggle('hidden', !e.target.checked);
+        atualizarPainelRisco();
+        redesenharDistritos();
+      });
+      document.getElementById('com-indicador').addEventListener('change', carregarCom);
 
       // Dados ainda mockados. O Recife tem 8 distritos sanitarios desde
       // a reorganizacao de 2014 (DS VII e DS VIII foram desmembrados).
