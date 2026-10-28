@@ -7,9 +7,9 @@ o unico lugar a alterar (e o ponto de partida da historia US-05a).
 
 ------------------------------------------------------------------------
 LIMIARES INICIAIS, DA LITERATURA. AINDA NAO CALIBRADOS COM O HISTORICO
-LOCAL DE OCORRENCIAS. Aplicados a dado de MODELO (Open-Meteo), que tende a
-suavizar tempestades locais intensas - os limiares da literatura foram
-derivados de pluviometro.
+LOCAL DE OCORRENCIAS. Acumulado de 72 h: pluviometro (CEMADEN), como na
+literatura. Previsao de 24 h: modelo (Open-Meteo), que tende a suavizar
+tempestades locais intensas (decisao 006).
 ------------------------------------------------------------------------
 
 Fontes:
@@ -70,7 +70,7 @@ def _mm(valor):
 
 
 def avaliar_gatilhos(zonas, mare):
-    """Aplica as regras a cada zona de chuva.
+    """Aplica as regras a cada distrito (antes: zona de chuva do modelo).
 
     zonas: lista de dicts com nome, chuva_prox_24h_mm e chuva_72h_mm
     mare:  dict com alta_prevista (bool), nivel_m e quando (texto) da maior

@@ -11,12 +11,9 @@ from shapely.geometry import shape
 from etl.comum.ckan import pacote_por_id, recurso_por_formato
 from etl.comum.http import get_bytes
 
+from dominio.distritos import nome_distrito  # noqa: F401  (reexportado para os conectores)
+
 DATASET = "distritos-sanitarios"
-ROMANOS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"]
-
-
-def nome_distrito(codigo):
-    return f"DS {ROMANOS[codigo - 1]}" if 1 <= codigo <= len(ROMANOS) else f"DS {codigo}"
 
 
 def distritos_poligonos():

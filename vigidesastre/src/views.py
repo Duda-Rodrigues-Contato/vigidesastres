@@ -11,6 +11,7 @@ from pymongo.errors import PyMongoError
 from dominio import limiares
 from dominio.mare import preamares
 
+from . import painel_chuva
 from .repositorios import arboviroses as repo_arboviroses
 from .repositorios import mare as repo_mare
 from .repositorios import referencia as repo_referencia
@@ -26,110 +27,6 @@ def index(request):
     # A raiz leva direto ao painel: o index.html original é uma folha de
     # exemplos de telas de erro, não uma landing page.
     return redirect("dashboard")
-
-
-def _resumo_meteo(banco):
-    """Chuva, previsão e temperatura para o card meteorológico.
-
-    A cidade tem várias zonas de chuva; o card mostra a PIOR, nomeada.
-    Uma média esconderia justamente a zona que precisa de atenção.
-    """
-    zonas = list(banco["ZonasChuva"].find({}, {"_id": 0, "geometria": 0}))
-    if not zonas:
-        return None
-
-    def pior(campo):
-        zona = max(zonas, key=lambda z: z.get(campo) or 0)
-        valor = zona.get(campo)
-        if valor is None:  # zonas gravadas antes da previsão existir
-            return None, None
-        return valor, (zona["nome"] if valor > 0 else "em todas as zonas")
-
-    chuva_24h, chuva_24h_zona = pior("chuva_24h_mm")
-    previsao_24h, previsao_24h_zona = pior("chuva_prox_24h_mm")
-
-    temperaturas = [
-        d["temperatura_c"]
-        for z in zonas
-        for d in z["distritos"]
-        if d.get("temperatura_c") is not None
-    ]
-
-    # o pymongo devolve datetime sem fuso; o valor gravado é UTC
-    coletado_em = zonas[0]["coletado_em"].replace(tzinfo=dt_timezone.utc)
-    idade = timezone.now() - coletado_em
-
-    return {
-        "chuva_24h": chuva_24h,
-        "chuva_24h_zona": chuva_24h_zona,
-        "previsao_24h": previsao_24h,
-        "previsao_24h_zona": previsao_24h_zona,
-        "chuva_24h_classe": limiares.classificar_chuva(chuva_24h),
-        "previsao_24h_classe": limiares.classificar_chuva(previsao_24h),
-        "temp_min": min(temperaturas) if temperaturas else None,
-        "temp_max": max(temperaturas) if temperaturas else None,
-        "coletado_em": timezone.localtime(coletado_em),
-        "desatualizado": idade > timedelta(hours=3),
-        "idade_horas": int(idade.total_seconds() // 3600),
-    }
-
-
-def _chuva_diaria(banco, dias=14):
-    """Chuva diária por zona, para o gráfico do dashboard.
-
-    São ~1.300 registros horários (14 dias x zonas x 24 h): o agrupamento
-    por dia é feito aqui no Python, no fuso do Recife.
-    """
-    zonas = list(banco["ZonasChuva"].find({}, {"_id": 0, "nome": 1, "distritos": 1}))
-    if not zonas:
-        return None
-
-    # dentro da zona a chuva é idêntica: um distrito de referência basta
-    referencia = {z["distritos"][0]["codigo"]: z["nome"] for z in zonas}
-
-    hoje = timezone.localdate()
-    primeiro_dia = hoje - timedelta(days=dias - 1)
-    # meia-noite local do primeiro dia, convertida para UTC sem fuso,
-    # que é como o pymongo grava e compara datas
-    inicio = (
-        timezone.make_aware(datetime.combine(primeiro_dia, time.min))
-        .astimezone(dt_timezone.utc)
-        .replace(tzinfo=None)
-    )
-
-    registros = banco["MeteoHorario"].find(
-        {
-            "distrito_codigo": {"$in": list(referencia)},
-            "previsao": False,
-            "hora": {"$gt": inicio},
-        },
-        {"_id": 0, "distrito_codigo": 1, "hora": 1, "chuva_mm": 1},
-    )
-
-    soma = {}
-    for r in registros:
-        # cada valor horário é a chuva da hora ANTERIOR: recua 1 h antes de
-        # decidir o dia, senão a chuva das 23h-0h cairia no dia seguinte
-        hora = r["hora"].replace(tzinfo=dt_timezone.utc) - timedelta(hours=1)
-        chave = (r["distrito_codigo"], timezone.localtime(hora).date())
-        soma[chave] = soma.get(chave, 0.0) + (r["chuva_mm"] or 0.0)
-
-    datas = [primeiro_dia + timedelta(days=i) for i in range(dias)]
-    rotulos = [d.strftime("%d/%m") for d in datas]
-    rotulos[-1] = "hoje"
-
-    series = [
-        {
-            "nome": nome,
-            # dia sem coleta fica vazio (lacuna no gráfico), não zero
-            "valores": [
-                round(soma[(codigo, d)], 1) if (codigo, d) in soma else None
-                for d in datas
-            ],
-        }
-        for codigo, nome in sorted(referencia.items())
-    ]
-    return {"rotulos": rotulos, "series": series}
 
 
 def _resumo_mare(banco):
@@ -173,79 +70,6 @@ def _resumo_mare(banco):
         "limiar_alta": round(limiar, 2),
         "desatualizado": agora - coletado_em > timedelta(hours=6),
         "_serie": [d for d in docs if d["hora"] > agora],
-    }
-
-
-def _zonas_para_gatilhos(banco):
-    """Zonas com previsão 24 h e chuva acumulada nas últimas 72 h."""
-    zonas = list(banco["ZonasChuva"].find({}, {"_id": 0, "geometria": 0}))
-    if not zonas:
-        return []
-    # dentro da zona a chuva é idêntica: um distrito de referência basta
-    referencia = {z["distritos"][0]["codigo"]: z["nome"] for z in zonas}
-    coletado = zonas[0]["coletado_em"]  # sem fuso, em UTC, como o pymongo grava
-    inicio = coletado - timedelta(hours=limiares.JANELA_ACUMULADO_H)
-
-    acumulado = {}
-    for r in banco["MeteoHorario"].find(
-        {
-            "distrito_codigo": {"$in": list(referencia)},
-            "previsao": False,
-            "hora": {"$gt": inicio, "$lte": coletado},
-        },
-        {"_id": 0, "distrito_codigo": 1, "chuva_mm": 1},
-    ):
-        nome = referencia[r["distrito_codigo"]]
-        acumulado[nome] = acumulado.get(nome, 0.0) + (r["chuva_mm"] or 0.0)
-
-    return [
-        {
-            "nome": z["nome"],
-            "codigo_referencia": z["distritos"][0]["codigo"],
-            "chuva_prox_24h_mm": z.get("chuva_prox_24h_mm"),
-            "chuva_72h_mm": round(acumulado.get(z["nome"], 0.0), 1),
-        }
-        for z in zonas
-    ]
-
-
-def _proximas_48h(banco, zonas, mare):
-    """Chuva prevista (pior zona) e maré, hora a hora, para o gráfico."""
-    agora = timezone.now()
-    fim = agora + timedelta(hours=48)
-    pontos = {}
-
-    com_previsao = [z for z in zonas if z.get("chuva_prox_24h_mm") is not None]
-    zona = max(com_previsao, key=lambda z: z["chuva_prox_24h_mm"]) if com_previsao else None
-    if zona:
-        for r in banco["MeteoHorario"].find(
-            {
-                "distrito_codigo": zona["codigo_referencia"],
-                "previsao": True,
-                "hora": {
-                    "$gt": agora.astimezone(dt_timezone.utc).replace(tzinfo=None),
-                    "$lte": fim.astimezone(dt_timezone.utc).replace(tzinfo=None),
-                },
-            },
-            {"_id": 0, "hora": 1, "chuva_mm": 1},
-        ):
-            hora = r["hora"].replace(tzinfo=dt_timezone.utc)
-            pontos.setdefault(hora, {})["chuva"] = r["chuva_mm"]
-
-    if mare:
-        for d in mare["_serie"]:
-            if d["hora"] <= fim:
-                pontos.setdefault(d["hora"], {})["mare"] = d["nivel_m"]
-
-    if not pontos:
-        return None
-    horas = sorted(pontos)
-    return {
-        "rotulos": [timezone.localtime(h).strftime("%d/%m %Hh") for h in horas],
-        "chuva": [pontos[h].get("chuva") for h in horas],
-        "mare": [pontos[h].get("mare") for h in horas],
-        "limiar_mare": mare["limiar_alta"] if mare else None,
-        "zona": zona["nome"] if zona else None,
     }
 
 
@@ -401,25 +225,27 @@ def dashboard(request):
         "arboviroses": None,
         "alertas": None,
         "proximas_48h": None,
+        "avisos": [],
         "erro_banco": False,
     }
     # A página inicial nunca pode cair por causa do banco: sem conexão,
     # abre com "--" e um aviso, em vez de erro 500.
     try:
         banco = get_mongo_client()[BANCO]
-        contexto["meteo"] = _resumo_meteo(banco)
-        contexto["chuva_diaria"] = _chuva_diaria(banco)
+        contexto["meteo"] = painel_chuva.resumo_meteo()
+        contexto["chuva_diaria"] = painel_chuva.chuva_diaria()
+        contexto["avisos"] = painel_chuva.avisos_oficiais()
         contexto["arboviroses"] = repo_arboviroses.resumo_semana_cidade()
 
         mare = _resumo_mare(banco)
-        zonas = _zonas_para_gatilhos(banco)
+        distritos = painel_chuva.distritos_para_gatilhos()
         contexto["mare"] = mare
         # None = sem dado para avaliar; [] = avaliado e nenhum gatilho disparou
-        contexto["alertas"] = limiares.avaliar_gatilhos(zonas, mare) if zonas else None
+        contexto["alertas"] = limiares.avaliar_gatilhos(distritos, mare) if distritos else None
         contexto["alertas_altos"] = sum(
             1 for x in contexto["alertas"] or [] if x["nivel"] == "ALTO"
         )
-        contexto["proximas_48h"] = _proximas_48h(banco, zonas, mare)
+        contexto["proximas_48h"] = painel_chuva.proximas_48h(distritos, mare)
         contexto["total_distritos"] = repo_referencia.total_distritos()
         contexto["total_unidades"] = repo_referencia.total_unidades()
     except PyMongoError:
@@ -488,44 +314,11 @@ def get_unidades_geojson(request):
     return JsonResponse({"type": "FeatureCollection", "features": features})
 
 
-def get_zonas_chuva_geojson(request):
-    """Zonas de chuva estimada: distritos fundidos por célula do modelo.
+def get_chuva_distritos_geojson(request):
+    """Distritos coloridos pela chuva medida em 24 h (pior pluviômetro do distrito)."""
+    return JsonResponse(painel_chuva.chuva_por_distrito_geojson(repo_referencia.distritos_features()))
 
-    O Open-Meteo enxerga o Recife em poucas células, então vários
-    distritos recebem a mesma chuva. Mostrar a zona inteira é mais
-    honesto do que repetir o mesmo número em cada distrito.
-    """
-    colecao = get_mongo_client()[BANCO]["ZonasChuva"]
 
-    features = []
-    coletado_em = None
-    for z in colecao.find({}, {"_id": 0}):
-        coletado_em = z.get("coletado_em")
-        features.append(
-            {
-                "type": "Feature",
-                "geometry": z["geometria"],
-                "properties": {
-                    "zona_id": z["zona_id"],
-                    "nome": z["nome"],
-                    "chuva_24h_mm": z["chuva_24h_mm"],
-                    "chuva_7d_mm": z["chuva_7d_mm"],
-                    "distritos": z["distritos"],
-                    "ponto_rotulo": z.get("ponto_rotulo"),
-                    "chuva_prox_24h_mm": z.get("chuva_prox_24h_mm"),
-                },
-            }
-        )
-
-    # o pymongo devolve datetime sem fuso; o valor gravado é UTC
-    if coletado_em is not None:
-        coletado_em = coletado_em.replace(tzinfo=dt_timezone.utc).isoformat()
-
-    return JsonResponse(
-        {
-            "type": "FeatureCollection",
-            "coletado_em": coletado_em,
-            "fonte": "Open-Meteo — modelo meteorológico, não medição",
-            "features": features,
-        }
-    )
+def get_estacoes_chuva_geojson(request):
+    """Pluviômetros do CEMADEN como pontos, com a chuva das últimas 24 h."""
+    return JsonResponse(painel_chuva.estacoes_geojson())

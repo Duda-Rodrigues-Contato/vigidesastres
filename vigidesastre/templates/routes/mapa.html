@@ -258,6 +258,7 @@
       }
 
       function formatarMm(mm) {
+        if (mm === null || mm === undefined) return 'sem dado';
         return mm.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' mm';
       }
 
@@ -312,12 +313,12 @@
             onEachFeature: function (feature, layer) {
               const nome = nomeDistrito(feature.properties);
               if (nome) {
-                // dica dinamica: com a chuva ligada, diz a qual zona o distrito pertence
+                // dica dinamica: com a chuva ligada, mostra a chuva medida do distrito
                 layer.bindTooltip(function () {
                   const zona = chuvaLigada() && zonaDoDistrito[nome];
                   return zona
-                    ? '<strong>' + nome + '</strong><br>pertence à ' + zona.nome +
-                      '<br>' + formatarMm(zona.chuva_24h_mm) + ' em 24h (modelo)'
+                    ? '<strong>' + nome + '</strong><br>' + formatarMm(zona.chuva_24h_mm) + ' em 24h' +
+                      (zona.estacao ? '<br>pior pluviômetro: ' + zona.estacao : '')
                     : '<strong>' + nome + '</strong>';
                 }, { sticky: true });
               }
@@ -401,7 +402,7 @@
         });
 
 
-      // ─── Camada: chuva estimada por zona (Open-Meteo) ───────────
+      // ─── Camada: chuva medida por distrito (CEMADEN) ────────────
       // O modelo enxerga o Recife em poucas celulas; distritos na mesma
       // celula recebem a mesma chuva. Cada zona e um poligono unico com
       // um unico valor - em vez de repetir o numero em varios distritos.
@@ -427,11 +428,11 @@
             '<i style="display:inline-block;width:12px;height:12px;margin-right:6px;' +
             'vertical-align:middle;background:' + corChuva(v + 0.1) + '"></i>' + rotulo
           ).join('<br>') +
-          '<br><span style="color:#64748b">Estimativa por modelo<br>meteorológico, não medição</span>';
+          '<br><span style="color:#64748b">Pior pluviômetro do distrito<br>Dados da Rede Observacional<br>do CEMADEN/MCTIC</span>';
         return div;
       };
 
-      fetch('/api/zonas-chuva/')
+      fetch('/api/chuva-distritos/')
         .then(r => r.json())
         .then(dados => {
           L.geoJSON(dados, {
@@ -439,10 +440,10 @@
             interactive: false,
             style: function (feature) {
               return {
-                fillColor: corChuva(feature.properties.chuva_24h_mm),
+                fillColor: feature.properties.chuva_24h_mm === null ? '#e2e8f0' : corChuva(feature.properties.chuva_24h_mm),
                 fillOpacity: 0.45,
                 color: '#1e3a8a',
-                weight: 4
+                weight: 1.5
               };
             },
             onEachFeature: function (feature, layer) {
@@ -456,7 +457,7 @@
               const ponto = p.ponto_rotulo
                 ? [p.ponto_rotulo[1], p.ponto_rotulo[0]]
                 : layer.getBounds().getCenter();
-              const siglas = p.nome.replace('Zona DS ', '');
+              const siglas = p.nome.replace('DS ', '');
               L.marker(ponto, {
                 interactive: false,
                 icon: L.divIcon({
@@ -472,7 +473,25 @@
             }
           }).addTo(camadaChuva);
         })
-        .catch(err => console.error('Erro ao carregar zonas de chuva:', err));
+        .catch(err => console.error('Erro ao carregar a chuva por distrito:', err));
+
+      // pluviômetros: um ponto por estação, com a chuva medida em 24 h
+      fetch('/api/estacoes-chuva/')
+        .then(r => r.json())
+        .then(dados => {
+          L.geoJSON(dados, {
+            pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
+              radius: 6, weight: 2, color: '#fff', fillOpacity: 1,
+              fillColor: feature.properties.chuva_24h_mm === null ? '#94a3b8' : corChuva(feature.properties.chuva_24h_mm)
+            }),
+            onEachFeature: (feature, layer) => {
+              const p = feature.properties;
+              layer.bindTooltip('<strong>' + p.nome + '</strong> (' + p.distrito + ')<br>' +
+                formatarMm(p.chuva_24h_mm) + ' em 24h<br><span style="color:#64748b">pluviômetro CEMADEN</span>');
+            }
+          }).addTo(camadaChuva);
+        })
+        .catch(err => console.error('Erro ao carregar os pluviômetros:', err));
 
       document.getElementById('camada-chuva')
         .addEventListener('change', function (e) {
@@ -825,12 +844,12 @@
         const titulo = document.getElementById('selected-district-name');
         titulo.innerText = id || 'Distrito';
         titulo.style.color = COR_SELECAO;  // liga o card ao contorno no mapa
-        // chuva real da zona (Open-Meteo); cai no mock se ainda nao carregou
+        // chuva medida do distrito (CEMADEN); cai no mock se ainda nao carregou
         const zona = zonaDoDistrito[id];
         document.getElementById('district-rain').innerText =
           zona ? formatarMm(zona.chuva_24h_mm) : data.rain;
         document.getElementById('district-rain-label').innerText =
-          zona ? 'Chuva 24h · zona (modelo)' : 'Chuva 24h';
+          zona ? 'Chuva 24h · pluviômetro' : 'Chuva 24h';
         document.getElementById('district-cases').innerText = data.cases;
         document.getElementById('district-alerts').innerText = data.alerts;
         card.classList.remove('hidden');

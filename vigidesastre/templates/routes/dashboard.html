@@ -14,9 +14,9 @@
             <div class="min-w-0">
               <h1 class="truncate text-2xl font-bold text-slate-900 md:text-3xl">Dashboard</h1>
               {% if meteo %}
-              <p class="mt-1 text-sm text-slate-500">Dados meteorológicos de {{ meteo.coletado_em|date:"d/m/Y" }} às {{ meteo.coletado_em|time:"H:i" }}</p>
+              <p class="mt-1 text-sm text-slate-500">Última leitura dos pluviômetros: {{ meteo.coletado_em|date:"d/m/Y" }} às {{ meteo.coletado_em|time:"H:i" }}</p>
               {% else %}
-              <p class="mt-1 text-sm text-slate-500">Sem coleta meteorológica — rode <code>scripts/coletar_meteo.py</code></p>
+              <p class="mt-1 text-sm text-slate-500">Sem coleta meteorológica — rode <code>python -m etl cemaden previsao</code></p>
               {% endif %}
             </div>
             <div class="flex shrink-0 items-center gap-2">
@@ -117,7 +117,7 @@
                   </div>
                   <div>
                     <h2 class="font-bold text-slate-900">Monitoramento meteorológico</h2>
-                    <p class="text-xs text-slate-500">Open-Meteo · estimativa por modelo meteorológico, não medição</p>
+                    <p class="text-xs text-slate-500">Chuva medida: {{ meteo.fonte_chuva|default:"Dados da Rede Observacional do CEMADEN/MCTIC" }} · previsão e temperatura: Open-Meteo (modelo)</p>
                   </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
@@ -128,14 +128,14 @@
                   {% else %}
                   <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">Atualizado</span>
                   {% endif %}
-                  {% if meteo %}<span class="text-xs text-slate-500">Última coleta: {{ meteo.coletado_em|date:"d/m" }} às {{ meteo.coletado_em|time:"H:i" }}</span>{% endif %}
+                  {% if meteo %}<span class="text-xs text-slate-500">Última leitura: {{ meteo.coletado_em|date:"d/m" }} às {{ meteo.coletado_em|time:"H:i" }}</span>{% endif %}
                 </div>
               </div>
 
               <div class="grid gap-3 sm:grid-cols-2 xl:min-w-[46rem] xl:grid-cols-4">
                 <div class="rounded-md bg-slate-100 p-4">
                   <div class="flex items-center gap-2 text-xs text-slate-500">
-                    <i data-lucide="cloud-rain" class="w-4 h-4"></i> Chuva · últimas 24h
+                    <i data-lucide="cloud-rain" class="w-4 h-4"></i> Chuva medida · últimas 24h
                   </div>
                   <strong class="mt-1 block text-2xl text-slate-900">{% if meteo.chuva_24h is not None %}{{ meteo.chuva_24h|floatformat:1 }}{% else %}--{% endif %} <small class="text-sm font-medium">mm</small></strong>
                   <p class="mt-1 text-xs font-semibold text-slate-700">{{ meteo.chuva_24h_classe|default:"" }}</p>
@@ -143,7 +143,7 @@
                 </div>
                 <div class="rounded-md border border-blue-200 bg-blue-50 p-4">
                   <div class="flex items-center gap-2 text-xs text-blue-700">
-                    <i data-lucide="cloud-drizzle" class="w-4 h-4"></i> Previsão · próximas 24h
+                    <i data-lucide="cloud-drizzle" class="w-4 h-4"></i> Previsão · próximas 24h (modelo)
                   </div>
                   <strong class="mt-1 block text-2xl text-blue-900">{% if meteo.previsao_24h is not None %}{{ meteo.previsao_24h|floatformat:1 }}{% else %}--{% endif %} <small class="text-sm font-medium">mm</small></strong>
                   <p class="mt-1 text-xs font-semibold text-blue-900">{{ meteo.previsao_24h_classe|default:"" }}</p>
@@ -154,7 +154,7 @@
                     <i data-lucide="thermometer-sun" class="w-4 h-4"></i> Temperatura
                   </div>
                   <strong class="mt-1 block text-2xl text-slate-900">{% if meteo.temp_min is not None %}{{ meteo.temp_min|floatformat:1 }}–{{ meteo.temp_max|floatformat:1 }}{% else %}--{% endif %} <small class="text-sm font-medium">°C</small></strong>
-                  <p class="mt-1 text-[11px] text-slate-500">entre os distritos</p>
+                  <p class="mt-1 text-[11px] text-slate-500">entre os distritos (modelo)</p>
                 </div>
                 <div class="rounded-md p-4 {% if mare.proxima_alta %}border border-amber-300 bg-amber-50{% else %}bg-slate-100{% endif %}"
                      title="Altura em relação ao nível médio do mar. Modelo Open-Meteo, célula ~16 km mar adentro.">
@@ -163,7 +163,7 @@
                   </div>
                   <strong class="mt-1 block text-2xl text-slate-900">{% if mare %}{{ mare.proxima_nivel|floatformat:2 }}{% else %}--{% endif %} <small class="text-sm font-medium">m</small></strong>
                   <p class="mt-1 text-xs font-semibold {% if mare.proxima_alta %}text-amber-800{% else %}text-slate-700{% endif %}">{% if mare %}{% if mare.proxima_alta %}Maré alta (sizígia){% else %}Maré normal{% endif %}{% endif %}</p>
-                  <p class="text-[11px] text-slate-500">{% if mare %}{{ mare.proxima_quando }}{% else %}rode <code>coletar_mare.py</code>{% endif %}</p>
+                  <p class="text-[11px] text-slate-500">{% if mare %}{{ mare.proxima_quando }}{% else %}rode <code>python -m etl mare</code>{% endif %}</p>
                 </div>
               </div>
             </div>
@@ -179,7 +179,7 @@
                 </div>
                 <div>
                   <h2 class="font-bold text-slate-900">Próximas 48h — chuva prevista × maré</h2>
-                  <p class="text-xs text-slate-500">Chuva da zona com maior previsão{% if proximas_48h.zona %} ({{ proximas_48h.zona }}){% endif %} · linha tracejada: limiar de maré alta · Open-Meteo, modelo</p>
+                  <p class="text-xs text-slate-500">Chuva prevista no distrito com maior previsão{% if proximas_48h.zona %} ({{ proximas_48h.zona }}){% endif %} · linha tracejada: limiar de maré alta · Open-Meteo, modelo</p>
                 </div>
               </div>
               {% if proximas_48h %}
@@ -189,7 +189,7 @@
               {{ proximas_48h|json_script:"dados-48h" }}
               {% else %}
               <div class="grid h-72 place-items-center rounded-md border border-dashed border-slate-300 text-sm text-slate-500">
-                Sem previsão — rode <code class="mx-1">coletar_meteo.py</code> e <code class="mx-1">coletar_mare.py</code>
+                Sem previsão — rode <code class="mx-1">python -m etl previsao mare</code>
               </div>
               {% endif %}
             </section>
@@ -203,6 +203,19 @@
                   <h2 class="flex items-center gap-2 font-bold text-slate-900">Alertas sugeridos <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-800" title="Gerados automaticamente pelos gatilhos de chuva e maré. Um operador confirma.">Sistema</span></h2>
                   <p class="text-xs text-slate-500">Gatilhos de chuva e maré · um operador confirma</p>
                 </div>
+              </div>
+
+              <div class="mb-4 rounded-md border {% if avisos %}border-orange-200 bg-orange-50{% else %}border-slate-200 bg-slate-50{% endif %} p-3">
+                <p class="text-xs font-semibold uppercase tracking-wide {% if avisos %}text-orange-800{% else %}text-slate-500{% endif %}">Avisos oficiais · INMET</p>
+                {% for a in avisos %}
+                <div class="mt-2">
+                  <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold {% if a.nivel == 3 %}bg-red-100 text-red-800{% elif a.nivel == 2 %}bg-orange-100 text-orange-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">{{ a.severidade }}</span>
+                  <p class="mt-1 text-sm font-semibold text-slate-900">{{ a.evento }}</p>
+                  <p class="text-[11px] text-slate-600">{{ a.inicio|date:"d/m H:i" }} a {{ a.fim|date:"d/m H:i" }}{% if a.link %} · <a class="underline" href="{{ a.link }}" target="_blank" rel="noopener">ver aviso</a>{% endif %}</p>
+                </div>
+                {% empty %}
+                <p class="mt-1 text-xs text-slate-500">Nenhum aviso do INMET em vigor para o Recife.</p>
+                {% endfor %}
               </div>
 
               {% if alertas is None %}
@@ -230,7 +243,7 @@
               <p class="mt-3 text-[11px] text-amber-700">Sem dado de maré: o risco de alagamento está sendo avaliado só pela chuva.</p>
               {% endif %}
               <p class="mt-4 border-t border-slate-100 pt-3 text-[11px] leading-relaxed text-slate-500">
-                Limiares iniciais da literatura (Souza et al., 2012, com dados da Defesa Civil do Recife), ainda não calibrados com o histórico local. Aplicados a dado de modelo.
+                Limiares iniciais da literatura (Souza et al., 2012, com dados da Defesa Civil do Recife), ainda não calibrados com o histórico local. Acumulado de 72 h medido (pior pluviômetro do distrito); previsão de 24 h por modelo.
               </p>
             </aside>
 
@@ -243,8 +256,8 @@
                   <i data-lucide="activity" class="w-5 h-5"></i>
                 </div>
                 <div>
-                  <h2 class="font-bold text-slate-900">Chuva diária por zona — últimos 14 dias</h2>
-                  <p class="text-xs text-slate-500">Open-Meteo · estimativa por modelo · "hoje" é parcial</p>
+                  <h2 class="font-bold text-slate-900">Chuva diária medida — últimos 14 dias</h2>
+                  <p class="text-xs text-slate-500">Barras: média dos pluviômetros · linha: pior pluviômetro do dia · Dados da Rede Observacional do CEMADEN/MCTIC · "hoje" é parcial</p>
                 </div>
               </div>
 
@@ -255,7 +268,7 @@
               {{ chuva_diaria|json_script:"dados-chuva-diaria" }}
               {% else %}
               <div class="grid h-72 place-items-center rounded-md border border-dashed border-slate-300 text-sm text-slate-500">
-                Sem dados de chuva — rode <code class="mx-1">scripts/coletar_meteo.py</code>
+                Sem dados de chuva — rode <code class="mx-1">python -m etl cemaden</code>
               </div>
               {% endif %}
             </section>
@@ -269,7 +282,7 @@
       const elDados = document.getElementById('dados-chuva-diaria');
       if (elDados) {
         const dados = JSON.parse(elDados.textContent);
-        const cores = ['#1e3a8a', '#2563eb', '#0ea5e9', '#14b8a6', '#6366f1', '#64748b'];
+        const cores = ['#93c5fd', '#1e3a8a', '#0ea5e9', '#14b8a6', '#6366f1', '#64748b'];
         const mm = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' mm';
 
         new Chart(document.getElementById('graficoChuva'), {
@@ -281,7 +294,10 @@
               data: s.valores,
               borderColor: cores[i % cores.length],
               backgroundColor: cores[i % cores.length],
-              borderWidth: 2.5,
+              type: s.tipo || 'line',
+              order: s.tipo === 'bar' ? 2 : 1,
+              borderWidth: s.tipo === 'bar' ? 0 : 2.5,
+              borderRadius: 2,
               pointRadius: 3,
               tension: 0,
               spanGaps: false  // dia sem coleta fica como lacuna, nao como zero
