@@ -14,11 +14,13 @@ import argparse
 import sys
 
 from etl.destinos import obter_destino
+from etl.fontes.defesa_civil import DefesaCivil
+from etl.fontes.defesa_civil import DefesaCivil
 from etl.fontes.infodengue import InfoDengue
 
 # Registro das fontes já migradas para o padrão novo. As demais ainda
 # rodam pelos scripts antigos em scripts/ até serem migradas.
-FONTES = {c.nome: c for c in [InfoDengue]}
+FONTES = {c.nome: c for c in [InfoDengue, DefesaCivil]}
 
 
 def main(argv=None):
