@@ -10,18 +10,15 @@ LGPD: a extração lê o CSV linha a linha e soma na hora. Endereco nunca é
 lido para fora da linha, nem guardado. Reativo x rotina: dominio/defesa_civil.py.
 """
 
-import csv
-import io
 import re
 from itertools import chain
 from datetime import datetime, timezone
-
-from ftfy import fix_text
 
 from dominio.defesa_civil import eh_reativo, grau_de_risco
 from etl.base import Conector
 from etl.comum.ckan import dataset_por_titulo
 from etl.comum.http import get_bytes
+from etl.comum.tabela import ler_csv
 from etl.comum.texto import normalizar
 from etl.destinos.base import Carga
 
@@ -38,22 +35,6 @@ def _data(valor):
         except ValueError:
             continue
     return None
-
-
-def _decodificar(conteudo):
-    """UTF-8 quando for; senão Windows-1252 (o CSV de 2022 vem assim)."""
-    try:
-        texto = conteudo.decode("utf-8-sig")
-    except UnicodeDecodeError:
-        texto = conteudo.decode("cp1252", "replace")
-    return fix_text(texto)
-
-
-def _ler_csv(conteudo):
-    texto = _decodificar(conteudo)
-    cabecalho = texto.split("\n", 1)[0]
-    sep = ";" if cabecalho.count(";") > cabecalho.count(",") else ","
-    return csv.DictReader(io.StringIO(texto), delimiter=sep)
 
 
 # Em 2015, 2019, 2020 e 2022 os valores de Mês..Ocorrencia estão uma coluna
@@ -114,7 +95,7 @@ class DefesaCivil(Conector):
         """Já devolve o agregado {(data, bairro): contadores}. Nada individual sai daqui."""
         grupos = {}
         for ano, url in sorted(self._recursos().items()):
-            for linha in _campos(_ler_csv(get_bytes(url, timeout=300))):
+            for linha in _campos(ler_csv(get_bytes(url, timeout=300))):
                 self._somar(grupos, linha)
         return grupos
 

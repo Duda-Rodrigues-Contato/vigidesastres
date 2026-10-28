@@ -5,6 +5,7 @@ from . import conexao
 SILVER_DISTRITOS = "silver_distritos_sanitarios"
 SILVER_AREAS_RISCO = "silver_areas_risco"
 SILVER_COMUNIDADES = "silver_comunidades"
+SILVER_REDE_APOIO = "silver_rede_apoio"
 
 
 def distritos_features():
@@ -24,3 +25,9 @@ def areas_risco():
 def comunidades():
     """Comunidades de Interesse Social, sem o ponto de rótulo (o mapa não usa)."""
     return list(conexao.banco()[SILVER_COMUNIDADES].find({}, {"_id": 0, "ponto_rotulo": 0}))
+
+
+def rede_apoio(tipo=None):
+    """Abrigos, escolas e CRAS; tipo filtra um deles."""
+    filtro = {"tipo": tipo} if tipo else {}
+    return list(conexao.banco()[SILVER_REDE_APOIO].find(filtro, {"_id": 0}))

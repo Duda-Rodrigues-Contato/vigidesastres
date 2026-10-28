@@ -384,7 +384,6 @@ def get_rede_apoio_geojson(request):
     tipo = request.GET.get("tipo")
     if tipo and tipo not in TIPOS_REDE:
         return JsonResponse({"erro": "tipo inválido"}, status=400)
-    filtro = {"tipo": tipo} if tipo else {}
     features = [
         {
             "type": "Feature",
@@ -398,7 +397,7 @@ def get_rede_apoio_geojson(request):
                 "fonte": p["fonte"],
             },
         }
-        for p in get_mongo_client()[BANCO]["RedeApoio"].find(filtro, {"_id": 0})
+        for p in repo_referencia.rede_apoio(tipo)
     ]
     return JsonResponse({"type": "FeatureCollection", "features": features})
 

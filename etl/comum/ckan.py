@@ -4,8 +4,16 @@ from etl import config
 from etl.comum.http import get_json
 
 
-def dataset_por_titulo(busca, trecho_titulo):
-    res = get_json(f"{config.CKAN_RECIFE}/package_search", {"q": busca, "rows": 20})
+def dataset_por_titulo(busca, trecho_titulo, filtro=None):
+    """O primeiro dataset da busca cujo título contém o trecho.
+
+    filtro é o fq do CKAN (ex.: "tags:CREAS"), para datasets que a busca
+    por texto não acha.
+    """
+    params = {"q": busca, "rows": 20}
+    if filtro:
+        params["fq"] = filtro
+    res = get_json(f"{config.CKAN_RECIFE}/package_search", params)
     trecho = trecho_titulo.lower()
     return next((p for p in res["result"]["results"] if trecho in p["title"].lower()), None)
 
