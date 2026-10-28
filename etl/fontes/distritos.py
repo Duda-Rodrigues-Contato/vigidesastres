@@ -15,10 +15,10 @@ import json
 
 from etl.base import Conector
 from etl.comum.ckan import pacote_por_id, recurso_por_formato
+from etl.comum.distritos import DATASET
 from etl.comum.http import get_bytes
 from etl.destinos.base import Carga
 
-DATASET = "distritos-sanitarios"
 TOTAL_ESPERADO = 8
 
 

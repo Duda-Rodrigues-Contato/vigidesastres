@@ -15,17 +15,14 @@ qualquer coleta perdida. Upsert por (estação, horário): repetir não duplica.
 Distrito sem pluviômetro usa a estação mais próxima, marcada como tal.
 """
 
-import json
 from datetime import datetime, timedelta, timezone
 
-from shapely.geometry import Point, shape
+from shapely.geometry import Point
 
 from etl.base import Conector
 from etl.comum.cemaden import FONTE, ClienteCemaden, ler_serie
-from etl.comum.ckan import pacote_por_id, recurso_por_formato
-from etl.comum.http import get_bytes
+from etl.comum.distritos import distritos_poligonos
 from etl.destinos.base import Carga
-from etl.fontes.distritos import DATASET as DATASET_DISTRITOS
 
 CODIBGE_RECIFE = "2611606"
 UF = "PE"
@@ -46,13 +43,6 @@ def _hora_fechada(dt):
     (mesma convenção do Open-Meteo: o valor de T é a chuva da hora anterior)."""
     cheia = dt.replace(minute=0, second=0, microsecond=0)
     return cheia if dt == cheia else cheia + timedelta(hours=1)
-
-
-def distritos_poligonos():
-    """{codigo: polígono shapely} dos 8 distritos, do portal do Recife."""
-    recurso = recurso_por_formato(pacote_por_id(DATASET_DISTRITOS), "GEOJSON")
-    features = json.loads(get_bytes(recurso["url"]))["features"]
-    return {f["properties"]["cdistscodi"]: shape(f["geometry"]) for f in features}
 
 
 class Cemaden(Conector):
