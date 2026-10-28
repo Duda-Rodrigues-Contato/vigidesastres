@@ -432,10 +432,7 @@ def dashboard(request):
         )
         contexto["proximas_48h"] = _proximas_48h(banco, zonas, mare)
         contexto["total_distritos"] = repo_referencia.total_distritos()
-        # mesmo critério do mapa: só unidades com coordenada
-        contexto["total_unidades"] = banco["UnidadesSaude"].count_documents(
-            {"localizacao": {"$ne": None}}
-        )
+        contexto["total_unidades"] = repo_referencia.total_unidades()
     except PyMongoError:
         logger.exception("Falha ao consultar o MongoDB para o dashboard")
         contexto["erro_banco"] = True
@@ -479,28 +476,10 @@ def get_unidades_geojson(request):
     Aceita ?tipo=2 (ou repetido) para filtrar por código de tipo CNES.
     Unidades sem coordenada ficam de fora: quebrariam a camada do mapa.
     """
-    colecao = get_mongo_client()[BANCO]["UnidadesSaude"]
-
-    filtro = {"localizacao": {"$ne": None}}
-
-    tipos = request.GET.getlist("tipo")
-    if tipos:
-        try:
-            filtro["codigo_tipo"] = {"$in": [int(t) for t in tipos]}
-        except ValueError:
-            return JsonResponse(
-                {"erro": "parâmetro 'tipo' deve ser numérico"}, status=400
-            )
-
-    projecao = {
-        "_id": 0,
-        "localizacao": 1,
-        "nome": 1,
-        "tipo": 1,
-        "codigo_tipo": 1,
-        "bairro": 1,
-        "turno": 1,
-    }
+    try:
+        tipos = [int(t) for t in request.GET.getlist("tipo")]
+    except ValueError:
+        return JsonResponse({"erro": "parâmetro 'tipo' deve ser numérico"}, status=400)
 
     features = [
         {
@@ -514,7 +493,7 @@ def get_unidades_geojson(request):
                 "turno": u.get("turno"),
             },
         }
-        for u in colecao.find(filtro, projecao)
+        for u in repo_referencia.unidades_saude(tipos)
     ]
 
     return JsonResponse({"type": "FeatureCollection", "features": features})

@@ -6,6 +6,7 @@ SILVER_DISTRITOS = "silver_distritos_sanitarios"
 SILVER_AREAS_RISCO = "silver_areas_risco"
 SILVER_COMUNIDADES = "silver_comunidades"
 SILVER_REDE_APOIO = "silver_rede_apoio"
+SILVER_UNIDADES = "silver_unidades_saude"
 
 
 def distritos_features():
@@ -31,3 +32,17 @@ def rede_apoio(tipo=None):
     """Abrigos, escolas e CRAS; tipo filtra um deles."""
     filtro = {"tipo": tipo} if tipo else {}
     return list(conexao.banco()[SILVER_REDE_APOIO].find(filtro, {"_id": 0}))
+
+
+def unidades_saude(codigos_tipo=None):
+    """Unidades com coordenada (sem ela quebrariam a camada do mapa); filtra por tipo CNES."""
+    filtro = {"localizacao": {"$ne": None}}
+    if codigos_tipo:
+        filtro["codigo_tipo"] = {"$in": list(codigos_tipo)}
+    projecao = {"_id": 0, "localizacao": 1, "nome": 1, "tipo": 1, "codigo_tipo": 1, "bairro": 1, "turno": 1}
+    return list(conexao.banco()[SILVER_UNIDADES].find(filtro, projecao))
+
+
+def total_unidades():
+    """Mesmo critério do mapa: só unidades com coordenada."""
+    return conexao.banco()[SILVER_UNIDADES].count_documents({"localizacao": {"$ne": None}})
