@@ -2,6 +2,7 @@ Django>=6.1
 python-dotenv
 pymongo
 certifi
-requestsshapely
+requests
+shapely
 pyproj
 ftfy
