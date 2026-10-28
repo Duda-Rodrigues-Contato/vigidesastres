@@ -9,8 +9,10 @@ from django.utils import timezone
 from pymongo.errors import PyMongoError
 
 from dominio import limiares
+from dominio.mare import preamares
 
 from .repositorios import arboviroses as repo_arboviroses
+from .repositorios import mare as repo_mare
 from .repositorios import referencia as repo_referencia
 from .repositorios.conexao import BANCO, get_mongo_client
 
@@ -130,33 +132,20 @@ def _chuva_diaria(banco, dias=14):
     return {"rotulos": rotulos, "series": series}
 
 
-def _preamares(serie):
-    """Marés cheias: picos locais da série horária."""
-    return [
-        atual
-        for anterior, atual, seguinte in zip(serie, serie[1:], serie[2:])
-        if atual["nivel_m"] > anterior["nivel_m"] and atual["nivel_m"] >= seguinte["nivel_m"]
-    ]
-
-
 def _resumo_mare(banco):
     """Próxima maré cheia e se ela é "alta" pelo critério de limiares.py.
 
     "Alta" = entre as marés cheias mais altas dos últimos 14 dias (percentil
     sobre os PICOS, ou seja, as marés de sizígia).
     """
-    docs = list(
-        banco["MareHorario"]
-        .find({"nivel_m": {"$ne": None}}, {"_id": 0, "hora": 1, "nivel_m": 1, "previsao": 1, "coletado_em": 1})
-        .sort("hora", 1)
-    )
+    docs = repo_mare.serie()
     if not docs:
         return None
     for d in docs:
         d["hora"] = d["hora"].replace(tzinfo=dt_timezone.utc)
 
     agora = timezone.now()
-    picos = _preamares(docs)
+    picos = preamares(docs)
     corte = agora - timedelta(days=14)
     picos_14d = [p["nivel_m"] for p in picos if not p["previsao"] and p["hora"] > corte]
     futuros = [p for p in picos if p["previsao"] and p["hora"] > agora]
