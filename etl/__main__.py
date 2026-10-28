@@ -15,13 +15,14 @@ import sys
 
 from etl.destinos import obter_destino
 from etl.fontes.areas_risco import AreasRisco
+from etl.fontes.comunidades import Comunidades
 from etl.fontes.defesa_civil import DefesaCivil
 from etl.fontes.distritos import Distritos
 from etl.fontes.infodengue import InfoDengue
 
 # Registro das fontes já migradas para o padrão novo. As demais ainda
 # rodam pelos scripts antigos em scripts/ até serem migradas.
-FONTES = {c.nome: c for c in [InfoDengue, DefesaCivil, Distritos, AreasRisco]}
+FONTES = {c.nome: c for c in [InfoDengue, DefesaCivil, Distritos, AreasRisco, Comunidades]}
 
 
 def main(argv=None):

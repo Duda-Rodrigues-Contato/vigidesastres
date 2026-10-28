@@ -356,7 +356,7 @@ def get_comunidades_geojson(request):
     """Comunidades de Interesse Social (levantamento de 2014).
 
     ?indicador=alagamento|deslizamento|indice. Notas de 0 a 10; maior = pior,
-    conferido contra o Plano de Contingência 2024 (coletar_comunidades.py).
+    conferido contra o Plano de Contingência 2024 (analises/comunidades/conferir_escalas.py).
     """
     campo = INDICADORES_COMUNIDADE.get(request.GET.get("indicador", "alagamento"))
     if not campo:
@@ -371,7 +371,7 @@ def get_comunidades_geojson(request):
                 "valor": c["indicadores"].get(campo), "indicadores": c["indicadores"],
             },
         }
-        for c in get_mongo_client()[BANCO]["Comunidades"].find({}, {"_id": 0, "ponto_rotulo": 0})
+        for c in repo_referencia.comunidades()
     ]
     return JsonResponse({"type": "FeatureCollection", "features": features})
 
