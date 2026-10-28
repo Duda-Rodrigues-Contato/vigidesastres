@@ -42,7 +42,7 @@ DIAS_PASSADOS = 14  # alimenta o grafico de 14 dias do dashboard
 DIAS_PREVISAO = 2
 
 BANCO = "Recife"
-COL_DISTRITOS = "DistritosSanitarios"
+COL_DISTRITOS = "silver_distritos_sanitarios"  # gravado por python -m etl distritos
 COL_RAW = "raw_open_meteo"
 COL = "MeteoHorario"
 COL_ZONAS = "ZonasChuva"
@@ -86,7 +86,7 @@ def pontos_dos_distritos(cliente):
         )
 
     if not pontos:
-        sys.exit("ERRO: nenhum distrito no banco. Rode antes o seed_distritos.py")
+        sys.exit("ERRO: nenhum distrito no banco. Rode antes: python -m etl distritos")
 
     pontos.sort(key=lambda p: p["codigo"])
     print(f"{len(pontos)} distritos, um ponto interno por distrito:")

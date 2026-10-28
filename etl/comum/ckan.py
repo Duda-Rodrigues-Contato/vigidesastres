@@ -9,6 +9,19 @@ def dataset_por_titulo(busca, trecho_titulo):
     trecho = trecho_titulo.lower()
     return next((p for p in res["result"]["results"] if trecho in p["title"].lower()), None)
 
+def pacote_por_id(id_dataset):
+    """O dataset pelo identificador da URL (ex.: 'distritos-sanitarios')."""
+    return get_json(f"{config.CKAN_RECIFE}/package_show", {"id": id_dataset})["result"]
+
+
+def recurso_por_formato(pacote, formato):
+    """O primeiro recurso do formato pedido (GEOJSON, CSV...). Erro se não houver."""
+    recurso = next((r for r in pacote["resources"]
+                    if (r.get("format") or "").upper() == formato.upper()), None)
+    if recurso is None:
+        formatos = ", ".join(sorted({r.get("format") or "?" for r in pacote["resources"]}))
+        raise ValueError(f"nenhum recurso {formato} em {pacote.get('name')}; há: {formatos}")
+    return recurso
 
 def ler_datastore(resource_id, campos=None):
     """Lê todas as linhas de um recurso.

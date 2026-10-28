@@ -12,6 +12,8 @@ lido para fora da linha, nem guardado. Reativo x rotina: dominio/defesa_civil.py
 
 import csv
 import io
+import re
+from itertools import chain
 from datetime import datetime, timezone
 
 from ftfy import fix_text
@@ -38,11 +40,45 @@ def _data(valor):
     return None
 
 
+def _decodificar(conteudo):
+    """UTF-8 quando for; senão Windows-1252 (o CSV de 2022 vem assim)."""
+    try:
+        texto = conteudo.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        texto = conteudo.decode("cp1252", "replace")
+    return fix_text(texto)
+
+
 def _ler_csv(conteudo):
-    texto = fix_text(conteudo.decode("utf-8", "replace"))
+    texto = _decodificar(conteudo)
     cabecalho = texto.split("\n", 1)[0]
     sep = ";" if cabecalho.count(";") > cabecalho.count(",") else ","
     return csv.DictReader(io.StringIO(texto), delimiter=sep)
+
+
+# Em 2015, 2019, 2020 e 2022 os valores de Mês..Ocorrencia estão uma coluna
+# à esquerda do cabeçalho: a data cai em "Mês", a ocorrência em "Data" e a
+# solicitação em "Ocorrencia". A coluna "Solicitacao" desses anos traz o
+# ENDEREÇO, por isso nunca é lida nesse layout. Bairro e Grau_de_Risco batem.
+LAYOUT_PADRAO = {"data": "Data", "ocorrencia": "Ocorrencia", "solicitacao": "Solicitacao"}
+LAYOUT_DESLOCADO = {"data": "Mês", "ocorrencia": "Data", "solicitacao": "Ocorrencia"}
+_ISO = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+
+def _layout(amostra):
+    """Deslocado se 'Mês' traz data ISO na maior parte da amostra."""
+    datas = sum(bool(_ISO.match((l.get("Mês") or "").strip())) for l in amostra)
+    return LAYOUT_DESLOCADO if amostra and datas > len(amostra) / 2 else LAYOUT_PADRAO
+
+
+def _campos(leitor):
+    """Só os 5 campos usados, já no nome certo. Endereço nunca passa daqui."""
+    amostra = [l for _, l in zip(range(200), leitor)]
+    lay = _layout(amostra)
+    for l in chain(amostra, leitor):
+        yield {"Data": l.get(lay["data"]), "Ocorrencia": l.get(lay["ocorrencia"]),
+               "Solicitacao": l.get(lay["solicitacao"]), "Bairro": l.get("Bairro"),
+               "Grau_de_Risco": l.get("Grau_de_Risco")}
 
 
 def _vazio():
@@ -78,7 +114,7 @@ class DefesaCivil(Conector):
         """Já devolve o agregado {(data, bairro): contadores}. Nada individual sai daqui."""
         grupos = {}
         for ano, url in sorted(self._recursos().items()):
-            for linha in _ler_csv(get_bytes(url, timeout=300)):
+            for linha in _campos(_ler_csv(get_bytes(url, timeout=300))):
                 self._somar(grupos, linha)
         return grupos
 

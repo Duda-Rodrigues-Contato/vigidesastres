@@ -54,3 +54,22 @@ def test_rodar_de_novo_nao_duplica(destino, monkeypatch):
     DefesaCivil(destino, anos=[2024]).executar()
     DefesaCivil(destino, anos=[2024]).executar()
     assert destino.banco["silver_defesa_civil_bairro_dia"].count_documents({}) == 2
+
+
+# 2015/2019/2020/2022: valores deslocados uma coluna; "Solicitacao" traz o endereço
+CSV_DESLOCADO = (
+    "Regional;Ano;Mês;Data;Ocorrencia;Solicitacao;Endereco;Bairro;Grau_de_Risco\n"
+    "2015;4;2015-04-30;;Monitoramento;Rua Secreta 9;x;Ibura;\n"
+    "2015;4;2015-04-30;Alagamentos;Vistoria;Rua Secreta 8;x;Ibura;R2\n"
+).encode("cp1252")
+
+
+def test_layout_deslocado_le_data_certa_e_ignora_endereco(destino, monkeypatch):
+    monkeypatch.setattr(defesa_civil, "dataset_por_titulo", lambda *a: PACOTE)
+    monkeypatch.setattr(defesa_civil, "get_bytes", lambda url, timeout=None: CSV_DESLOCADO)
+    DefesaCivil(destino, anos=[2024]).executar()
+    d = destino.banco["silver_defesa_civil_bairro_dia"].find_one()
+    assert d["data"].date().isoformat() == "2015-04-30"
+    assert (d["total"], d["reativos"], d["rotina"]) == (2, 1, 1)
+    assert set(d["por_tipo"]) == {"MONITORAMENTO", "VISTORIA"}
+    assert "Rua Secreta" not in str(d)

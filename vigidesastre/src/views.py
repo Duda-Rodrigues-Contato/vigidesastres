@@ -11,6 +11,7 @@ from pymongo.errors import PyMongoError
 from dominio import limiares
 
 from .repositorios import arboviroses as repo_arboviroses
+from .repositorios import referencia as repo_referencia
 from .repositorios.conexao import BANCO, get_mongo_client
 
 logger = logging.getLogger(__name__)
@@ -432,7 +433,7 @@ def dashboard(request):
             1 for x in contexto["alertas"] or [] if x["nivel"] == "ALTO"
         )
         contexto["proximas_48h"] = _proximas_48h(banco, zonas, mare)
-        contexto["total_distritos"] = banco["DistritosSanitarios"].count_documents({})
+        contexto["total_distritos"] = repo_referencia.total_distritos()
         # mesmo critério do mapa: só unidades com coordenada
         contexto["total_unidades"] = banco["UnidadesSaude"].count_documents(
             {"localizacao": {"$ne": None}}
@@ -470,8 +471,7 @@ def get_distritos_geojson(request):
     `cdistscodi` (1 a 8); a conversão para "DS I"..."DS VIII" é feita
     no front-end.
     """
-    colecao = get_mongo_client()[BANCO]["DistritosSanitarios"]
-    features = list(colecao.find({}, {"_id": 0}))
+    features = repo_referencia.distritos_features()
     return JsonResponse({"type": "FeatureCollection", "features": features})
 
 
