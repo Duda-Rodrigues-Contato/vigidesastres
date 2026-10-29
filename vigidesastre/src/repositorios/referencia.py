@@ -3,6 +3,7 @@
 from . import conexao
 
 SILVER_DISTRITOS = "silver_distritos_sanitarios"
+SILVER_BAIRROS = "silver_bairros"
 SILVER_AREAS_RISCO = "silver_areas_risco"
 SILVER_COMUNIDADES = "silver_comunidades"
 SILVER_REDE_APOIO = "silver_rede_apoio"
@@ -46,3 +47,8 @@ def unidades_saude(codigos_tipo=None):
 def total_unidades():
     """Mesmo critério do mapa: só unidades com coordenada."""
     return conexao.banco()[SILVER_UNIDADES].count_documents({"localizacao": {"$ne": None}})
+
+
+def bairros():
+    """Bairros com limite e população (IBGE, Censo 2022)."""
+    return list(conexao.banco()[SILVER_BAIRROS].find({}, {"_id": 0}))

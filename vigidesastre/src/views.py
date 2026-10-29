@@ -108,8 +108,7 @@ def get_arboviroses_bairros_geojson(request):
 
     ?ano=2025 (padrão: o mais recente)  ?doenca=dengue|chikungunya|zika|todas
     """
-    banco = get_mongo_client()[BANCO]
-    anos = sorted(banco["ArboviroseBairroAnual"].distinct("ano"))
+    anos = repo_arboviroses.anos_por_bairro()
     if not anos:
         return JsonResponse({"type": "FeatureCollection", "features": [], "anos": []})
 
@@ -123,14 +122,12 @@ def get_arboviroses_bairros_geojson(request):
         return JsonResponse({"erro": "doença inválida"}, status=400)
 
     por_bairro = {}
-    for r in banco["ArboviroseBairroAnual"].find(
-        {"ano": ano, "doenca": {"$in": list(doencas)}}, {"_id": 0}
-    ):
+    for r in repo_arboviroses.por_bairro(ano, doencas):
         b = por_bairro.setdefault(r["chave"], {"populacao": r["populacao"], "por_doenca": {}})
         b["por_doenca"][r["doenca"]] = r["provaveis"]
 
     features = []
-    for bairro in banco["Bairros"].find({}, {"_id": 0}):
+    for bairro in repo_referencia.bairros():
         dados = por_bairro.get(bairro["chave"])
         if not dados:
             continue

@@ -18,3 +18,18 @@ def resumo_semana_cidade():
     doc["inicio"] = doc["inicio"].date()
     doc["fim"] = doc["fim"].date()
     return doc
+
+
+SILVER_BAIRRO_ANO = "silver_arboviroses_bairro_ano"
+
+
+def anos_por_bairro():
+    """Anos com dados por bairro (histórico do SINAN), em ordem."""
+    return sorted(conexao.banco()[SILVER_BAIRRO_ANO].distinct("ano"))
+
+
+def por_bairro(ano, doencas):
+    """Casos prováveis por bairro e doença num ano."""
+    return list(conexao.banco()[SILVER_BAIRRO_ANO].find(
+        {"ano": ano, "doenca": {"$in": list(doencas)}},
+        {"_id": 0, "chave": 1, "doenca": 1, "provaveis": 1, "populacao": 1}))
