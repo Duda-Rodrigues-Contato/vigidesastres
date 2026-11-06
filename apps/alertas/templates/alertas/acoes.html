@@ -79,6 +79,8 @@
         <option>DS IV</option>
         <option>DS V</option>
         <option>DS VI</option>
+        <option>DS VII</option>
+        <option>DS VIII</option>
       </select>
     </label>
     <label class="mt-4 block text-sm font-semibold text-slate-900">
@@ -111,6 +113,7 @@
 {% endblock %}
 
 {% block scripts %}
+{{ acoes|json_script:"dados-acoes" }}
 <script>
 
   function getToday() {
@@ -144,13 +147,7 @@
   updateDateLimit();
 
 
-  let actionsList = [
-    { name: "Distribuição de hipoclorito — Várzea", team: "Vigilância Ambiental", district: "DS VI", date: "02/09/2026", status: "Em andamento" },
-    { name: "Triagem em abrigo temporário — Ibura", team: "SAMU + UBS Ibura", district: "DS VI", date: "02/09/2026", status: "Em andamento" },
-    { name: "Nebulização — Afogados", team: "Endemias", district: "DS VI", date: "01/09/2026", status: "Em andamento" },
-    { name: "Visita domiciliar pós-chuva — Várzea", team: "ACS DS VI", district: "DS VI", date: "31/08/2026", status: "Concluída" },
-    { name: "Alerta sonoro calor — Centro", team: "Comunicação SMS", district: "DS VI", date: "30/08/2026", status: "Concluída" }
-  ];
+  let actionsList = JSON.parse(document.getElementById('dados-acoes').textContent);
 
   let currentFilter = 'Todos';
 
@@ -212,16 +209,19 @@
       return;
     }
 
-    actionsList.unshift({
-      name: name,
-      team: team,
-      district: district,
-      date: formatDate(date),
-      status: status
+    const csrf = document.cookie.split('; ').find(c => c.startsWith('csrftoken='))?.split('=')[1] || '';
+    fetch('/api/acoes/', {
+      method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf},
+      body: JSON.stringify({name, team, district, date, status})
+    }).then(async r => {
+      const dados = await r.json();
+      if (!r.ok) { alert(dados.erro || 'Não foi possível salvar a ação.'); return; }
+      actionsList.unshift(dados);
+      e.target.reset();
+      updateDateLimit();
+      toggleModal(false);
+      renderActions();
     });
-    //input.value = '';
-    //toggleModal(false);
-    //renderActions();
 
     e.target.reset();
     updateDateLimit();

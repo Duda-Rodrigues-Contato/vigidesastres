@@ -16,19 +16,19 @@
           <section class="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <article class="rounded-lg border border-slate-200 bg-white p-4 md:p-5 shadow-sm">
               <p class="text-xs font-medium text-slate-500 md:text-sm">Total de alertas</p>
-              <p class="mt-2 text-3xl font-bold text-blue-600">9</p>
+              <p class="mt-2 text-3xl font-bold text-blue-600">{{ totais.total }}</p>
             </article>
             <article class="rounded-lg border border-slate-200 bg-white p-4 md:p-5 shadow-sm">
               <p class="text-xs font-medium text-slate-500 md:text-sm">Em aberto</p>
-              <p class="mt-2 text-3xl font-bold text-red-600">4</p>
+              <p class="mt-2 text-3xl font-bold text-red-600">{{ totais.aberto }}</p>
             </article>
             <article class="rounded-lg border border-slate-200 bg-white p-4 md:p-5 shadow-sm">
               <p class="text-xs font-medium text-slate-500 md:text-sm">Monitorando</p>
-              <p class="mt-2 text-3xl font-bold text-amber-600">1</p>
+              <p class="mt-2 text-3xl font-bold text-amber-600">{{ totais.monitorando }}</p>
             </article>
             <article class="rounded-lg border border-slate-200 bg-white p-4 md:p-5 shadow-sm">
               <p class="text-xs font-medium text-slate-500 md:text-sm">Encerrados</p>
-              <p class="mt-2 text-3xl font-bold text-green-600">4</p>
+              <p class="mt-2 text-3xl font-bold text-green-600">{{ totais.encerrado }}</p>
             </article>
           </section>
 
@@ -90,18 +90,9 @@
 {% endblock %}
 
 {% block scripts %}
+{{ alertas|json_script:"dados-alertas" }}
   <script>
-      const alertsData = [
-        { severity: "ALTO", title: "Alagamento — Várzea", type: "Alagamento", area: "DS VI", date: "02/09/2026", time: "08:42", status: "Em aberto" },
-        { severity: "ALTO", title: "Risco de deslizamento — Ibura", type: "Deslizamento", area: "DS V", date: "02/09/2026", time: "07:15", status: "Em aberto" },
-        { severity: "MÉDIO", title: "Acumulado de chuva elevado — Boa Viagem", type: "Chuva", area: "DS II", date: "02/09/2026", time: "06:58", status: "Em aberto" },
-        { severity: "MÉDIO", title: "Onda de calor — Boa Vista", type: "Calor", area: "DS I", date: "02/09/2026", time: "05:30", status: "Em aberto" },
-        { severity: "BAIXO", title: "Surto leptospirose — Afogados", type: "Epidemiológico", area: "DS IV", date: "01/09/2026", time: "14:20", status: "Monitorando" },
-        { severity: "MÉDIO", title: "Alagamento — Pina", type: "Alagamento", area: "DS II", date: "01/09/2026", time: "11:05", status: "Encerrado" },
-        { severity: "BAIXO", title: "Acidentes escorpiões — Ibura", type: "Peçonhentos", area: "DS V", date: "01/09/2026", time: "09:33", status: "Encerrado" },
-        { severity: "ALTO", title: "Deslizamento — Morro da Conceição", type: "Deslizamento", area: "DS III", date: "31/08/2026", time: "22:10", status: "Encerrado" },
-        { severity: "BAIXO", title: "Inundação — Tejipió", type: "Alagamento", area: "DS V", date: "31/08/2026", time: "18:00", status: "Encerrado" }
-      ];
+      const alertsData = JSON.parse(document.getElementById('dados-alertas').textContent);
 
       function renderTable(items) {
         const tbody = document.getElementById('alerts-table-body');
@@ -129,7 +120,14 @@
             <td class="px-5 py-4 text-slate-500">${alert.date}</td>
             <td class="px-5 py-4 text-slate-500">${alert.time}</td>
             <td class="px-5 py-4"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${stBadge}">${alert.status}</span></td>
-            <td class="px-5 py-4"><button class="text-xs font-semibold text-blue-600 hover:underline">Ver →</button></td>
+            <td class="px-5 py-4">
+              <select onchange="mudarStatus(${alert.id}, this.value)" class="rounded border border-slate-300 bg-white px-2 py-1 text-xs">
+                <option value="">Mudar status…</option>
+                <option value="aberto">Em aberto</option>
+                <option value="monitorando">Monitorando</option>
+                <option value="encerrado">Encerrado</option>
+              </select>
+            </td>
           `;
           tbody.appendChild(tr);
         });
@@ -148,6 +146,20 @@
         });
 
         renderTable(filtered);
+      }
+
+      function csrf() {
+        return document.cookie.split('; ').find(c => c.startsWith('csrftoken='))?.split('=')[1] || '';
+      }
+
+      async function mudarStatus(id, status) {
+        if (!status) return;
+        const r = await fetch(`/api/alertas/${id}/status/`, {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf()},
+          body: JSON.stringify({status})
+        });
+        if (r.ok) location.reload();
+        else alert('Não foi possível mudar o status.');
       }
 
       lucide.createIcons();

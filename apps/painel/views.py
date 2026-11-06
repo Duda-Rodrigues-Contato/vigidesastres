@@ -10,56 +10,13 @@ from pymongo.errors import PyMongoError
 from dominio import limiares
 from dominio.mare import preamares
 from apps.fontes import painel_chuva
+from apps.fontes.resumo_mare import resumo_mare
 from apps.fontes.repositorios import arboviroses as repo_arboviroses
 from apps.fontes.repositorios import mare as repo_mare
 from apps.fontes.repositorios import referencia as repo_referencia
 from apps.fontes.repositorios.conexao import BANCO, get_mongo_client
 
 logger = logging.getLogger(__name__)
-
-
-def _resumo_mare(banco):
-    """Próxima maré cheia e se ela é "alta" pelo critério de limiares.py.
-
-    "Alta" = entre as marés cheias mais altas dos últimos 14 dias (percentil
-    sobre os PICOS, ou seja, as marés de sizígia).
-    """
-    docs = repo_mare.serie()
-    if not docs:
-        return None
-    for d in docs:
-        d["hora"] = d["hora"].replace(tzinfo=dt_timezone.utc)
-
-    agora = timezone.now()
-    picos = preamares(docs)
-    corte = agora - timedelta(days=14)
-    picos_14d = [p["nivel_m"] for p in picos if not p["previsao"] and p["hora"] > corte]
-    futuros = [p for p in picos if p["previsao"] and p["hora"] > agora]
-    if len(picos_14d) < 5 or not futuros:
-        return None  # pouco histórico para o critério relativo, ou sem previsão
-
-    limiar = statistics.quantiles(picos_14d, n=100, method="inclusive")[
-        limiares.PERCENTIL_MARE_ALTA - 1
-    ]
-    janela_24h = [p for p in futuros if p["hora"] <= agora + timedelta(hours=24)] or futuros[:1]
-    maior = max(janela_24h, key=lambda p: p["nivel_m"])
-    proxima = futuros[0]
-    coletado_em = docs[0]["coletado_em"].replace(tzinfo=dt_timezone.utc)
-
-    def quando(p):
-        return timezone.localtime(p["hora"]).strftime("%d/%m às %H:%M")
-
-    return {
-        "proxima_nivel": proxima["nivel_m"],
-        "proxima_quando": quando(proxima),
-        "proxima_alta": proxima["nivel_m"] >= limiar,
-        "nivel_m": maior["nivel_m"],
-        "quando": quando(maior),
-        "alta_prevista": maior["nivel_m"] >= limiar,
-        "limiar_alta": round(limiar, 2),
-        "desatualizado": agora - coletado_em > timedelta(hours=6),
-        "_serie": [d for d in docs if d["hora"] > agora],
-    }
 
 
 def dashboard(request):
@@ -84,7 +41,7 @@ def dashboard(request):
         contexto["avisos"] = painel_chuva.avisos_oficiais()
         contexto["arboviroses"] = repo_arboviroses.resumo_semana_cidade()
 
-        mare = _resumo_mare(banco)
+        mare = resumo_mare()
         distritos = painel_chuva.distritos_para_gatilhos()
         contexto["mare"] = mare
         # None = sem dado para avaliar; [] = avaliado e nenhum gatilho disparou

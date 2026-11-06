@@ -96,6 +96,10 @@ DATABASES = {
 }
 
 
+# Nos testes, banco SQLite em memória: nunca toca no Neon
+if os.getenv("PYTEST_VERSION"):
+    DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}}
+
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
 
