@@ -45,18 +45,18 @@
                 <div class="mt-3 grid grid-cols-3 gap-2 text-center">
                   <div class="rounded bg-slate-100 p-2">
                     <i data-lucide="cloud-rain" class="mx-auto text-blue-600 w-4 h-4"></i>
-                    <strong id="district-rain" class="mt-1 block text-sm">52.4 mm</strong>
+                    <strong id="district-rain" class="mt-1 block text-sm">--</strong>
                     <small id="district-rain-label" class="text-[10px] text-slate-500">Chuva 24h</small>
                   </div>
                   <div class="rounded bg-slate-100 p-2">
-                    <i data-lucide="users" class="mx-auto text-blue-600 w-4 h-4"></i>
-                    <strong id="district-cases" class="mt-1 block text-sm">38</strong>
-                    <small class="text-[10px] text-slate-500">Casos</small>
+                    <i data-lucide="cloud-sun-rain" class="mx-auto text-blue-600 w-4 h-4"></i>
+                    <strong id="district-cases" class="mt-1 block text-sm">--</strong>
+                    <small class="text-[10px] text-slate-500">Previsão 24h</small>
                   </div>
                   <div class="rounded bg-slate-100 p-2">
                     <i data-lucide="building-2" class="mx-auto text-blue-600 w-4 h-4"></i>
-                    <strong id="district-alerts" class="mt-1 block text-sm">3</strong>
-                    <small class="text-[10px] text-slate-500">Alertas</small>
+                    <strong id="district-alerts" class="mt-1 block text-sm">--</strong>
+                    <small class="text-[10px] text-slate-500">Alertas abertos</small>
                   </div>
                 </div>
               </div>
@@ -71,8 +71,8 @@
                 <div class="mt-4 space-y-3">
                   <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Clima</p>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
-                    <input type="checkbox" id="camada-chuva" class="size-4 accent-blue-600"> Chuva estimada
-                    <span class="text-xs text-slate-400">(modelo)</span>
+                    <input type="checkbox" id="camada-chuva" class="size-4 accent-blue-600"> Chuva medida
+                    <span class="text-xs text-slate-400">(CEMADEN)</span>
                   </label>
                   <p class="pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Risco</p>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
@@ -120,10 +120,6 @@
                     <input type="checkbox" checked id="camada-unidades" class="size-4 accent-blue-600"> Unidades de saúde
                     <span id="contador-unidades" class="text-xs text-slate-400"></span>
                   </label>
-                  <label class="flex cursor-pointer items-center gap-3 text-sm">
-                    <input type="checkbox" checked disabled class="size-4 accent-blue-600"> Acidentes peçonhentos
-                    <span class="text-xs text-slate-400">(sem fonte)</span>
-                  </label>
                   <p class="pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Rede de apoio</p>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
                     <input type="checkbox" checked id="camada-abrigo" class="size-4 accent-blue-600"> <i class="grid size-4 place-items-center rounded-[3px] border border-white bg-green-700 text-[9px] font-bold not-italic text-white shadow">A</i> Abrigos
@@ -155,10 +151,16 @@
                       class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Médio</span>
                   </div>
                   <div class="flex items-center justify-between text-sm">
-                    <span>Baixo</span>
+                    <span>Normal</span>
                     <span
-                      class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">Baixo</span>
+                      class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">Normal</span>
                   </div>
+                  <div class="flex items-center justify-between text-sm">
+                    <span>Sem dado</span>
+                    <span
+                      class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">Sem dado</span>
+                  </div>
+                  <p class="text-[11px] text-slate-400">Gatilhos de chuva medida (CEMADEN), previsão e maré. Passe o mouse no card do distrito para ver o motivo.</p>
                 </div>
               </div>
 
@@ -205,18 +207,22 @@
         return codigo && ROMANOS[codigo - 1] ? 'DS ' + ROMANOS[codigo - 1] : null;
       }
 
-      // Cor por nivel de risco. Enquanto a integracao de dados nao entra,
-      // o risco vem do mock em districtData.
-      const CORES_RISCO = {
-        alto: '#ef4444',
-        medio: '#f59e0b',
-        baixo: '#22c55e',
-      };
+      // Cor por nível: vem dos gatilhos reais de chuva e maré (/api/situacao-distritos/)
+      const CORES_RISCO = { 'ALTO': '#ef4444', 'MÉDIO': '#f59e0b', 'NORMAL': '#22c55e', 'SEM DADO': '#94a3b8' };
+      let situacao = {};
 
       function corDoDistrito(nome) {
-        const d = districtData[nome];
-        return (d && CORES_RISCO[d.risco]) || '#94a3b8';
+        const d = situacao[nome];
+        return (d && CORES_RISCO[d.nivel]) || CORES_RISCO['SEM DADO'];
       }
+
+      fetch('/api/situacao-distritos/')
+        .then(r => r.json())
+        .then(dados => {
+          dados.distritos.forEach(d => { situacao[d.nome] = d; });
+          if (typeof redesenharDistritos === 'function') redesenharDistritos();
+        })
+        .catch(err => console.error('Erro ao carregar a situação dos distritos:', err));
 
       let camadaDistritos = null;
       let distritoSelecionado = null;
@@ -387,7 +393,8 @@
           camadaUnidades.addTo(map);
 
           const total = dados.features.length;
-          document.getElementById('contador-unidades').innerText = '(' + total + ')';
+          document.getElementById('contador-unidades').innerText = total ? '(' + total + ')' : '(indisponível)';
+          if (!total) document.getElementById('camada-unidades').disabled = true;
         })
         .catch(err => console.error('Erro ao carregar unidades:', err));
 
@@ -752,7 +759,8 @@
             contagem[p.tipo]++;
           });
           Object.entries(contagem).forEach(([tipo, n]) => {
-            document.getElementById('contador-' + tipo).innerText = '(' + n + ')';
+            document.getElementById('contador-' + tipo).innerText = n ? '(' + n + ')' : '(indisponível)';
+            if (!n) { const c = document.getElementById('camada-' + tipo); c.checked = false; c.disabled = true; }
             if (document.getElementById('camada-' + tipo).checked) camadasRede[tipo].addTo(map);
           });
         })
@@ -824,34 +832,18 @@
       });
       document.getElementById('com-indicador').addEventListener('change', carregarCom);
 
-      // Dados ainda mockados. O Recife tem 8 distritos sanitarios desde
-      // a reorganizacao de 2014 (DS VII e DS VIII foram desmembrados).
-      const districtData = {
-        'DS I': { rain: '18.2 mm', cases: '12', alerts: '1', risco: 'baixo' },
-        'DS II': { rain: '32.1 mm', cases: '24', alerts: '2', risco: 'medio' },
-        'DS III': { rain: '28.6 mm', cases: '19', alerts: '1', risco: 'baixo' },
-        'DS IV': { rain: '14.0 mm', cases: '9', alerts: '0', risco: 'baixo' },
-        'DS V': { rain: '48.9 mm', cases: '40', alerts: '2', risco: 'alto' },
-        'DS VI': { rain: '52.4 mm', cases: '38', alerts: '3', risco: 'alto' },
-        'DS VII': { rain: '26.5 mm', cases: '17', alerts: '1', risco: 'medio' },
-        'DS VIII': { rain: '41.3 mm', cases: '28', alerts: '2', risco: 'alto' },
-      };
-
       function selectDistrict(id) {
         const card = document.getElementById('district-detail-card');
-        // dados ainda mockados; quando a integracao entrar, buscar da API
-        const data = districtData[id] || { rain: '--', cases: '--', alerts: '--' };
+        const d = situacao[id] || {};
         const titulo = document.getElementById('selected-district-name');
         titulo.innerText = id || 'Distrito';
-        titulo.style.color = COR_SELECAO;  // liga o card ao contorno no mapa
-        // chuva medida do distrito (CEMADEN); cai no mock se ainda nao carregou
-        const zona = zonaDoDistrito[id];
-        document.getElementById('district-rain').innerText =
-          zona ? formatarMm(zona.chuva_24h_mm) : data.rain;
+        titulo.style.color = COR_SELECAO;
+        document.getElementById('district-rain').innerText = formatarMm(d.chuva_24h_mm);
         document.getElementById('district-rain-label').innerText =
-          zona ? 'Chuva 24h · pluviômetro' : 'Chuva 24h';
-        document.getElementById('district-cases').innerText = data.cases;
-        document.getElementById('district-alerts').innerText = data.alerts;
+          d.estacao_24h ? 'Chuva 24h · ' + d.estacao_24h : 'Chuva 24h medida';
+        document.getElementById('district-cases').innerText = formatarMm(d.previsao_24h_mm);
+        document.getElementById('district-alerts').innerText = d.alertas_abertos ?? '--';
+        card.title = (d.motivos || []).join('\n') || ('Nível: ' + (d.nivel || 'sem dado'));
         card.classList.remove('hidden');
       }
 

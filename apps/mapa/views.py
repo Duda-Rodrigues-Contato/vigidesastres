@@ -1,5 +1,7 @@
 """Mapa e APIs GeoJSON que ele consome."""
 
+from apps.painel.situacao import situacao_por_distrito
+
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from apps.fontes import painel_chuva
@@ -198,3 +200,8 @@ def get_rede_apoio_geojson(request):
         for p in repo_referencia.rede_apoio(tipo)
     ]
     return JsonResponse({"type": "FeatureCollection", "features": features})
+
+
+def get_situacao_distritos(request):
+    """Nível de cada distrito (gatilhos reais), chuva, previsão e alertas abertos."""
+    return JsonResponse({"distritos": situacao_por_distrito()})

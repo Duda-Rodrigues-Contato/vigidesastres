@@ -9,6 +9,7 @@ from django.utils import timezone
 from pymongo.errors import PyMongoError
 from dominio import limiares
 from dominio.mare import preamares
+from apps.alertas.models import AcaoResposta
 from apps.fontes import painel_chuva
 from apps.fontes.resumo_mare import resumo_mare
 from apps.fontes.repositorios import arboviroses as repo_arboviroses
@@ -55,5 +56,11 @@ def dashboard(request):
     except PyMongoError:
         logger.exception("Falha ao consultar o MongoDB para o dashboard")
         contexto["erro_banco"] = True
+    try:
+        em_andamento = AcaoResposta.objects.filter(status=AcaoResposta.Status.ANDAMENTO)
+        contexto["acoes_andamento"] = em_andamento.count()
+        contexto["equipes_mobilizadas"] = em_andamento.values("equipe").distinct().count()
+    except Exception:  # noqa: BLE001 - o dashboard nunca cai por causa do PostgreSQL
+        logger.exception("Falha ao consultar o PostgreSQL para o dashboard")
 
     return render(request, "painel/dashboard.html", contexto)

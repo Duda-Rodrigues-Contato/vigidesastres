@@ -1,0 +1,38 @@
+import pytest
+
+from apps.alertas.models import Alerta
+from apps.painel import situacao
+
+pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture
+def fontes(monkeypatch):
+    monkeypatch.setattr(situacao.painel_chuva, "distritos_para_gatilhos", lambda: [
+        {"nome": "DS I", "codigo": 1, "chuva_prox_24h_mm": 80.0, "chuva_72h_mm": 10.0},
+        {"nome": "DS II", "codigo": 2, "chuva_prox_24h_mm": 1.0, "chuva_72h_mm": 0.0},
+    ])
+    monkeypatch.setattr(situacao, "resumo_mare", lambda: None)
+    monkeypatch.setattr(situacao.limiares, "avaliar_gatilhos", lambda d, m: [
+        {"tipo": "Deslizamento", "nivel": "ALTO", "zona": "DS I", "motivo": "Previsão de 80 mm"}])
+    monkeypatch.setattr(situacao.repo_chuva, "ultima_leitura", lambda: None)
+
+
+def test_nivel_vem_dos_gatilhos_e_falta_de_dado_nao_e_normal(fontes):
+    s = {d["nome"]: d for d in situacao.situacao_por_distrito()}
+    assert len(s) == 8
+    assert s["DS I"]["nivel"] == "ALTO" and s["DS I"]["motivos"] == ["Previsão de 80 mm"]
+    assert s["DS II"]["nivel"] == "NORMAL"
+    assert s["DS V"]["nivel"] == "SEM DADO"
+
+
+def test_conta_so_alertas_nao_encerrados(fontes):
+    for status in ("aberto", "monitorando", "encerrado"):
+        Alerta.objects.create(titulo="x", tipo="x", nivel="ALTO", distrito="DS I", motivo="x",
+                              chave=status, status=status)
+    assert {d["nome"]: d for d in situacao.situacao_por_distrito()}["DS I"]["alertas_abertos"] == 2
+
+
+def test_api_do_mapa(client, fontes):
+    r = client.get("/api/situacao-distritos/")
+    assert r.status_code == 200 and r.json()["distritos"][0]["nivel"] == "ALTO"
