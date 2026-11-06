@@ -14,6 +14,7 @@ import csv
 from django.http import HttpResponse
 
 from apps.alertas.models import AcaoResposta
+from apps.painel.saude import saude_dos_dados
 from apps.painel.situacao import resumo_geral, situacao_por_distrito
 from apps.fontes import painel_chuva
 from apps.fontes.resumo_mare import resumo_mare
@@ -44,6 +45,11 @@ def dashboard(request):
         banco = get_mongo_client()[BANCO]
         contexto["meteo"] = painel_chuva.resumo_meteo()
         contexto["chuva_diaria"] = painel_chuva.chuva_diaria()
+        if contexto["chuva_diaria"]:
+            contexto["chuva_diaria"]["limiares"] = [
+                {"nome": "Chuva forte", "mm": limiares.CHUVA_FORTE, "cor": "#f97316"},
+                {"nome": "Chuva muito forte", "mm": limiares.CHUVA_MUITO_FORTE, "cor": "#dc2626"},
+            ]
         contexto["avisos"] = painel_chuva.avisos_oficiais()
         contexto["arboviroses"] = repo_arboviroses.resumo_semana_cidade()
 
@@ -64,6 +70,7 @@ def dashboard(request):
     try:
         contexto["situacao"] = situacao_por_distrito()
         contexto["faixa"] = resumo_geral(contexto["situacao"], contexto.get("avisos") or [])
+        contexto["saude"] = saude_dos_dados()
     except Exception:  # noqa: BLE001 - a faixa some, o resto do dashboard continua
         logger.exception("Falha ao montar a situação dos distritos")
     try:

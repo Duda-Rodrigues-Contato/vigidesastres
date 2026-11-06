@@ -35,6 +35,7 @@
           {% endif %}
 
           {% include "painel/_faixa.html" %}
+          {% include "painel/_saude.html" %}
 
           <!-- Seção de Métricas (KPIs) -->
           <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -183,7 +184,7 @@
                 </div>
                 <div>
                   <h2 class="font-bold text-slate-900">Próximas 48h — chuva prevista × maré</h2>
-                  <p class="text-xs text-slate-500">Chuva prevista no distrito com maior previsão{% if proximas_48h.zona %} ({{ proximas_48h.zona }}){% endif %} · linha tracejada: limiar de maré alta · Open-Meteo, modelo</p>
+                  <p class="text-xs text-slate-500">Faixas cinza: noite (18h às 6h) · Chuva prevista no distrito com maior previsão{% if proximas_48h.zona %} ({{ proximas_48h.zona }}){% endif %} · linha tracejada: limiar de maré alta · Open-Meteo, modelo</p>
                 </div>
               </div>
               {% if proximas_48h %}
@@ -304,8 +305,15 @@
               borderRadius: 2,
               pointRadius: 3,
               tension: 0,
-              spanGaps: false  // dia sem coleta fica como lacuna, nao como zero
-            }))
+              spanGaps: false,  // dia sem coleta fica como lacuna, nao como zero
+              // "hoje" ainda está acontecendo: barra clara e linha tracejada
+              ...(s.tipo === 'bar'
+                ? { backgroundColor: s.valores.map((_, j) => j === s.valores.length - 1 ? '#dbeafe' : cores[i % cores.length]) }
+                : { segment: { borderDash: c => c.p1DataIndex === s.valores.length - 1 ? [5, 4] : undefined } })
+            })).concat((dados.limiares || []).map(l => ({
+              type: 'line', label: l.nome + ' (' + mm(l.mm) + ')', data: dados.rotulos.map(() => l.mm),
+              borderColor: l.cor, borderDash: [6, 4], borderWidth: 1.2, pointRadius: 0, order: 0
+            })))
           },
           options: {
             responsive: true,
@@ -323,7 +331,7 @@
               x: { grid: { display: false } },
               y: {
                 beginAtZero: true,
-                suggestedMax: 5,  // em dia seco o eixo nao "amplia" 0,1 mm como se fosse muito
+                suggestedMax: 20,  // a linha de chuva forte (18,6 mm) sempre aparece como referência
                 grid: { color: '#f1f5f9' },
                 ticks: { callback: v => v.toLocaleString('pt-BR') + ' mm' }
               }
@@ -351,7 +359,32 @@
             data: d48.rotulos.map(() => d48.limiar_mare),
             borderColor: '#d97706', borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0, order: 0 });
         }
+        // noites (18h às 6h) sombreadas e uma linha na virada de cada dia
+        const hora = r => parseInt(r.split(' ')[1], 10);
+        const diasENoites = {
+          id: 'diasENoites',
+          beforeDatasetsDraw(chart) {
+            const { ctx, chartArea: a, scales: { x } } = chart;
+            const passo = (x.getPixelForValue(1) - x.getPixelForValue(0)) || 0;
+            ctx.save();
+            d48.rotulos.forEach((r, i) => {
+              const px = x.getPixelForValue(i), h = hora(r);
+              if (h >= 18 || h < 6) {
+                ctx.fillStyle = 'rgba(100, 116, 139, 0.07)';
+                ctx.fillRect(px - passo / 2, a.top, passo, a.bottom - a.top);
+              }
+              if (h === 0) {
+                ctx.strokeStyle = '#94a3b8'; ctx.setLineDash([3, 3]);
+                ctx.beginPath(); ctx.moveTo(px - passo / 2, a.top); ctx.lineTo(px - passo / 2, a.bottom); ctx.stroke();
+                ctx.setLineDash([]); ctx.fillStyle = '#64748b'; ctx.font = '11px sans-serif';
+                ctx.fillText(r.split(' ')[0], px - passo / 2 + 4, a.top + 12);
+              }
+            });
+            ctx.restore();
+          }
+        };
         new Chart(document.getElementById('grafico48h'), {
+          plugins: [diasENoites],
           data: { labels: d48.rotulos, datasets: series },
           options: {
             responsive: true,
