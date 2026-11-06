@@ -36,3 +36,26 @@ def test_conta_so_alertas_nao_encerrados(fontes):
 def test_api_do_mapa(client, fontes):
     r = client.get("/api/situacao-distritos/")
     assert r.status_code == 200 and r.json()["distritos"][0]["nivel"] == "ALTO"
+
+
+def _d(nome, nivel, motivo=None):
+    return {"nome": nome, "nivel": nivel, "motivos": [motivo] if motivo else []}
+
+
+def test_faixa_prioriza_o_pior_caso():
+    assert situacao.resumo_geral([_d("DS I", "ALTO", "80 mm"), _d("DS II", "MÉDIO", "x")], [])["estado"] == "ALERTA"
+    assert situacao.resumo_geral([_d("DS I", "NORMAL")], [{"evento": "Chuva", "severidade": "Perigo"}])["estado"] == "ATENÇÃO"
+    assert situacao.resumo_geral([_d("DS I", "SEM DADO")], [])["estado"] == "SEM DADOS"
+    normal = situacao.resumo_geral([_d("DS I", "NORMAL"), _d("DS II", "SEM DADO")], [])
+    assert normal["estado"] == "NORMAL" and "DS II" in normal["frase"]
+
+
+def test_tons_das_celulas():
+    assert [situacao.tom_chuva(v) for v in (None, 2, 10, 30, 60)] == ["", "", "amarelo", "laranja", "vermelho"]
+    assert [situacao.tom_acumulado(v) for v in (10, 40, 70)] == ["", "laranja", "vermelho"]
+
+
+def test_planilha(client, fontes):
+    r = client.get("/dashboard/situacao.csv")
+    linhas = r.content.decode("utf-8-sig").splitlines()
+    assert r.status_code == 200 and linhas[0].startswith("Distrito;Situação") and len(linhas) == 9

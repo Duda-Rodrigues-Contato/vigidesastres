@@ -9,7 +9,12 @@ from django.utils import timezone
 from pymongo.errors import PyMongoError
 from dominio import limiares
 from dominio.mare import preamares
+import csv
+
+from django.http import HttpResponse
+
 from apps.alertas.models import AcaoResposta
+from apps.painel.situacao import resumo_geral, situacao_por_distrito
 from apps.fontes import painel_chuva
 from apps.fontes.resumo_mare import resumo_mare
 from apps.fontes.repositorios import arboviroses as repo_arboviroses
@@ -57,6 +62,11 @@ def dashboard(request):
         logger.exception("Falha ao consultar o MongoDB para o dashboard")
         contexto["erro_banco"] = True
     try:
+        contexto["situacao"] = situacao_por_distrito()
+        contexto["faixa"] = resumo_geral(contexto["situacao"], contexto.get("avisos") or [])
+    except Exception:  # noqa: BLE001 - a faixa some, o resto do dashboard continua
+        logger.exception("Falha ao montar a situação dos distritos")
+    try:
         em_andamento = AcaoResposta.objects.filter(status=AcaoResposta.Status.ANDAMENTO)
         contexto["acoes_andamento"] = em_andamento.count()
         contexto["equipes_mobilizadas"] = em_andamento.values("equipe").distinct().count()
@@ -64,3 +74,17 @@ def dashboard(request):
         logger.exception("Falha ao consultar o PostgreSQL para o dashboard")
 
     return render(request, "painel/dashboard.html", contexto)
+
+
+def situacao_csv(request):
+    """A matriz dos distritos como planilha (requisito: exportar para planilha)."""
+    resposta = HttpResponse(content_type="text/csv; charset=utf-8")
+    resposta["Content-Disposition"] = 'attachment; filename="situacao_distritos.csv"'
+    resposta.write("\ufeff")  # BOM: o Excel abre os acentos certos
+    w = csv.writer(resposta, delimiter=";")
+    w.writerow(["Distrito", "Situação", "Chuva 24h (mm)", "Pluviômetro", "Chuva 72h (mm)",
+                "Previsão 24h (mm)", "Alertas abertos", "Motivos"])
+    for d in situacao_por_distrito():
+        w.writerow([d["nome"], d["nivel"], d["chuva_24h_mm"], d["estacao_24h"], d["chuva_72h_mm"],
+                    d["previsao_24h_mm"], d["alertas_abertos"], " | ".join(d["motivos"])])
+    return resposta

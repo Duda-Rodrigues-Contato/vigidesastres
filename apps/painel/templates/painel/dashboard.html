@@ -34,6 +34,8 @@
           </div>
           {% endif %}
 
+          {% include "painel/_faixa.html" %}
+
           <!-- Seção de Métricas (KPIs) -->
           <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <!-- Card 1: arboviroses (InfoDengue) -->
@@ -168,6 +170,8 @@
               </div>
             </div>
           </section>
+
+          {% include "painel/_matriz.html" %}
 
           <!-- Agora: proximas 48h e alertas sugeridos -->
           <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">

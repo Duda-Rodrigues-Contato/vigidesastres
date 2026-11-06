@@ -1,0 +1,12 @@
+{% if faixa %}
+<section class="mb-5 flex flex-wrap items-center gap-4 rounded-lg border p-4 shadow-sm
+  {% if faixa.cor == 'vermelho' %}border-red-300 bg-red-50{% elif faixa.cor == 'laranja' %}border-orange-300 bg-orange-50{% elif faixa.cor == 'verde' %}border-green-300 bg-green-50{% else %}border-slate-300 bg-slate-50{% endif %}">
+  <span class="rounded-md px-3 py-1.5 text-sm font-bold tracking-wide text-white
+    {% if faixa.cor == 'vermelho' %}bg-red-600{% elif faixa.cor == 'laranja' %}bg-orange-500{% elif faixa.cor == 'verde' %}bg-green-600{% else %}bg-slate-500{% endif %}">{{ faixa.estado }}</span>
+  <div class="min-w-0 flex-1">
+    <p class="font-bold text-slate-900">{{ faixa.titulo }}</p>
+    <p class="text-sm text-slate-700">{{ faixa.frase }}</p>
+  </div>
+  <a href="{% url 'mapa' %}" class="text-sm font-semibold text-blue-700 hover:underline">Ver no mapa →</a>
+</section>
+{% endif %}

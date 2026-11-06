@@ -220,6 +220,8 @@
         .then(r => r.json())
         .then(dados => {
           dados.distritos.forEach(d => { situacao[d.nome] = d; });
+          const alvo = new URLSearchParams(location.search).get('distrito');
+          if (alvo && situacao[alvo]) { distritoSelecionado = alvo; selectDistrict(alvo); }
           if (typeof redesenharDistritos === 'function') redesenharDistritos();
         })
         .catch(err => console.error('Erro ao carregar a situação dos distritos:', err));
