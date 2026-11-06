@@ -1,6 +1,6 @@
 from etl.fontes import areas_risco
 from etl.fontes.areas_risco import AreasRisco
-from vigidesastre.src.repositorios import conexao, referencia
+from apps.fontes.repositorios import conexao, referencia
 
 
 def _quadrado(x):

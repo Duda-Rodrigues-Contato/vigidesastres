@@ -6,3 +6,5 @@ requests
 shapely
 pyproj
 ftfy
+dj-database-url
+psycopg[binary]

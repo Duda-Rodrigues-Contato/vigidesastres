@@ -2,7 +2,7 @@ import json
 
 from etl.fontes import distritos
 from etl.fontes.distritos import Distritos
-from vigidesastre.src.repositorios import conexao, referencia
+from apps.fontes.repositorios import conexao, referencia
 
 
 def _feature(codigo):

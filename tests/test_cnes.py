@@ -1,6 +1,6 @@
 from etl.fontes import cnes
 from etl.fontes.cnes import Cnes
-from vigidesastre.src.repositorios import conexao, referencia
+from apps.fontes.repositorios import conexao, referencia
 
 
 def _est(codigo, tipo, lat="-8.05", lon="-34.9"):

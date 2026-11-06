@@ -4,8 +4,8 @@ from etl.fontes import arboviroses_bairros as arbo
 from etl.fontes import bairros as mod_bairros
 from etl.fontes.arboviroses_bairros import ArbovirosesBairros, arquivos_de_casos, contar
 from etl.fontes.bairros import Bairros
-from vigidesastre.src.repositorios import arboviroses as repo_arbo
-from vigidesastre.src.repositorios import conexao, referencia
+from apps.fontes.repositorios import arboviroses as repo_arbo
+from apps.fontes.repositorios import conexao, referencia
 
 POPULACAO = {"IBURA": {"nome": "Ibura", "cd_bairro_ibge": "1", "populacao": 10_000, "area_km2": 2.0},
              "RECIFE": {"nome": "Recife", "cd_bairro_ibge": "2", "populacao": 500, "area_km2": 1.0}}

@@ -2,7 +2,7 @@ import json
 
 from etl.fontes import comunidades
 from etl.fontes.comunidades import Comunidades
-from vigidesastre.src.repositorios import conexao, referencia
+from apps.fontes.repositorios import conexao, referencia
 
 
 def _cis(codigo, nome, bairro, alagam):

@@ -1,6 +1,6 @@
 from etl.fontes import rede_apoio
 from etl.fontes.rede_apoio import RedeApoio
-from vigidesastre.src.repositorios import conexao, referencia
+from apps.fontes.repositorios import conexao, referencia
 
 TABELAS = {
     "abrigos": [

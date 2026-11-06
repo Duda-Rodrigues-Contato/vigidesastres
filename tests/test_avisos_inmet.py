@@ -3,8 +3,8 @@ from datetime import datetime, timedelta, timezone
 from dominio.avisos import nivel, vale_para_recife
 from etl.fontes import avisos_inmet
 from etl.fontes.avisos_inmet import AvisosInmet, ler_feed
-from vigidesastre.src.repositorios import avisos as repo_avisos
-from vigidesastre.src.repositorios import conexao
+from apps.fontes.repositorios import avisos as repo_avisos
+from apps.fontes.repositorios import conexao
 
 AMANHA = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y-%m-%d")
 

@@ -3,8 +3,8 @@ from datetime import datetime, timedelta, timezone
 from dominio.mare import preamares
 from etl.fontes import mare
 from etl.fontes.mare import Mare
-from vigidesastre.src.repositorios import conexao
-from vigidesastre.src.repositorios import mare as repo_mare
+from apps.fontes.repositorios import conexao
+from apps.fontes.repositorios import mare as repo_mare
 
 AGORA = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
 # 2 h no passado, 4 no futuro; picos em -1 h e +2 h

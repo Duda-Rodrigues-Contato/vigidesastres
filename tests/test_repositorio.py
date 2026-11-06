@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from vigidesastre.src.repositorios import arboviroses, conexao
+from apps.fontes.repositorios import arboviroses, conexao
 
 
 def test_resumo_vem_da_gold_com_datas_puras(cliente, monkeypatch):

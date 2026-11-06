@@ -2,8 +2,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from vigidesastre.src import painel_chuva
-from vigidesastre.src.repositorios import conexao
+from apps.fontes import painel_chuva
+from apps.fontes.repositorios import conexao
 
 AGORA = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
 

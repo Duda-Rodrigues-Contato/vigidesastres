@@ -14,6 +14,7 @@ from pathlib import Path
 
 import os
 
+import dj_database_url
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -43,6 +44,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'apps.core',
+    'apps.painel',
+    'apps.mapa',
+    'apps.alertas',
+    'apps.relatorios',
 ]
 
 MIDDLEWARE = [
@@ -78,11 +84,15 @@ WSGI_APPLICATION = 'vigidesastre.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
+# PostgreSQL (Neon) para os dados do sistema: usuários, alertas, ações (decisão 007).
+# Os dados das fontes continuam no MongoDB, lidos por apps/fontes.
+# Sem DATABASE_URL (testes, CI), usa SQLite local.
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    "default": dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 
