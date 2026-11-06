@@ -1,3 +1,4 @@
 # Só para desenvolvimento: rodar os testes
 pytest
 mongomock
+pytest-django
