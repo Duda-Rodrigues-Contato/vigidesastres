@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path("mapa/", views.mapa_view, name="mapa"),
     path("api/situacao-distritos/", views.get_situacao_distritos, name="api_situacao_distritos"),
+    path("api/vulnerabilidade/", views.get_vulnerabilidade_geojson, name="api_vulnerabilidade"),
     path("api/distritos/", views.get_distritos_geojson, name="api_distritos"),
     path("api/unidades/", views.get_unidades_geojson, name="api_unidades"),
     path("api/chuva-distritos/", views.get_chuva_distritos_geojson, name="api_chuva_distritos"),

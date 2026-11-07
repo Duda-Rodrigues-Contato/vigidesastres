@@ -52,3 +52,9 @@ def total_unidades():
 def bairros():
     """Bairros com limite e população (IBGE, Censo 2022)."""
     return list(conexao.banco()[SILVER_BAIRROS].find({}, {"_id": 0}))
+
+
+def vulnerabilidade():
+    """Índice de vulnerabilidade por bairro (gold, etl/derivados/vulnerabilidade.py)."""
+    return list(conexao.banco()["gold_vulnerabilidade_bairro"].find({}, {"_id": 0, "coletado_em": 0}))
+

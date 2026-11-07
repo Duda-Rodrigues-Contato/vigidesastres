@@ -205,3 +205,13 @@ def get_rede_apoio_geojson(request):
 def get_situacao_distritos(request):
     """Nível de cada distrito (gatilhos reais), chuva, previsão e alertas abertos."""
     return JsonResponse({"distritos": situacao_por_distrito()})
+
+
+def get_vulnerabilidade_geojson(request):
+    """Bairros com o índice de vulnerabilidade (estrutural, histórico e geral)."""
+    indices = {v["chave"]: v for v in repo_referencia.vulnerabilidade()}
+    features = [{"type": "Feature", "geometry": b["geometria"], "properties": {**indices[b["chave"]], "nome": b["nome"]}}
+                for b in repo_referencia.bairros() if b["chave"] in indices]
+    return JsonResponse({"type": "FeatureCollection", "features": features,
+                         "fonte": "Comunidades (2014), Plano de Contingência 2024, Defesa Civil 2015-2024, IBGE 2022"})
+

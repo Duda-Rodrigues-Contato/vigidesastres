@@ -68,7 +68,7 @@ function desligar(id) {
 
 // com uma camada tematica por cima, os distritos viram so contorno
 function distritosEmContorno() {
-  return chuvaLigada() || riscoLigado() || arboLigado() || comLigado();
+  return chuvaLigada() || riscoLigado() || arboLigado() || comLigado() || vulLigado();
 }
 
 // o painel "Nivel de risco" descreve a cor dos distritos, que some
@@ -383,6 +383,7 @@ document.getElementById('camada-risco')
     if (e.target.checked) {
       desligar('camada-arbo');
       desligar('camada-com');
+      desligar('camada-vul');
       camadaRisco.addTo(map);
       // por cima dos distritos, para o clique abrir o detalhe do bairro...
       camadaRisco.eachLayer(l => l.bringToFront && l.bringToFront());
@@ -500,6 +501,7 @@ document.getElementById('camada-arbo')
     if (e.target.checked) {
       desligar('camada-risco');
       desligar('camada-com');
+      desligar('camada-vul');
       camadaArbo.addTo(map);
       carregarArbo();
     } else {
@@ -638,7 +640,7 @@ function carregarCom() {
 }
 
 document.getElementById('camada-com').addEventListener('change', e => {
-  if (e.target.checked) { desligar('camada-risco'); desligar('camada-arbo'); camadaCom.addTo(map); carregarCom(); }
+  if (e.target.checked) { desligar('camada-risco'); desligar('camada-arbo'); desligar('camada-vul'); camadaCom.addTo(map); carregarCom(); }
   else map.removeLayer(camadaCom);
   document.getElementById('controles-com').classList.toggle('hidden', !e.target.checked);
   atualizarPainelRisco();
@@ -666,3 +668,55 @@ function closeDistrictDetail() {
   distritoSelecionado = null;
   redesenharDistritos();
 }
+
+// ─── Camada: índice de vulnerabilidade por bairro (etapa 4b) ─────────
+const camadaVul = L.layerGroup();
+const CORES_VUL = ['#f1eef6', '#d7b5d8', '#df65b0', '#dd1c77', '#980043'];
+const NOMES_VUL = { indice: 'Geral', indice_estrutural: 'Estrutural', indice_historico: 'Histórico' };
+
+function vulLigado() { return document.getElementById('camada-vul').checked; }
+
+function corVul(v) {
+  if (v === null || v === undefined) return '#e2e8f0';
+  return CORES_VUL[Math.min(Math.floor(v * CORES_VUL.length), CORES_VUL.length - 1)];
+}
+
+function carregarVul() {
+  const campo = document.getElementById('vul-indice').value;
+  fetch('/api/vulnerabilidade/').then(r => r.json()).then(dados => {
+    document.getElementById('legenda-vul').innerHTML = CORES_VUL.map((c, i) =>
+      '<div class="flex items-center gap-2"><i class="inline-block size-3 rounded-sm" style="background:' + c + '"></i> ' +
+      fmt1(i / CORES_VUL.length) + ' a ' + fmt1((i + 1) / CORES_VUL.length) + '</div>').join('');
+    camadaVul.clearLayers();
+    L.geoJSON(dados, {
+      style: f => ({ fillColor: corVul(f.properties[campo]), color: '#701a75', weight: 0.6, fillOpacity: 0.75 }),
+      onEachFeature: (f, layer) => {
+        const p = f.properties;
+        const v = p[campo];
+        layer.bindTooltip('<strong>' + p.nome + '</strong><br>' + NOMES_VUL[campo] + ': ' +
+          (v === null || v === undefined ? 'sem dado' : fmt1(v)) + (p.posicao ? ' · ' + p.posicao + 'º de 94' : ''), { sticky: true });
+        layer.bindPopup('<div style="font-size:12px;max-width:270px"><strong style="font-size:14px">' + p.nome + '</strong>' +
+          '<p style="margin:2px 0;color:#64748b">' + (p.posicao ? p.posicao + 'º mais vulnerável de 94 · classe ' + p.classe : 'sem índice') + '</p>' +
+          '<ul style="margin:4px 0;padding-left:16px">' +
+          '<li>População em comunidades: ' + (p.pct_pop_comunidades === null ? 'sem dado' : Math.round(p.pct_pop_comunidades * 100) + '%') + '</li>' +
+          '<li>Risco médio das comunidades: ' + fmt1(p.risco_comunidades) + ' de 10</li>' +
+          '<li>Áreas de risco (Plano 2024): ' + p.areas_risco + '</li>' +
+          '<li>Atendimentos por 10 mil hab. em dia de chuva forte: ' +
+          (p.atendimentos_10k_por_dia_forte === null ? 'sem dado' : fmt1(p.atendimentos_10k_por_dia_forte)) + '</li></ul>' +
+          '<p style="margin:6px 0 0;color:#94a3b8;font-size:11px">Índice relativo entre os bairros do Recife (0 a 1). ' +
+          'Estrutural: cadastros. Histórico: Defesa Civil 2015-2024.</p></div>');
+      }
+    }).addTo(camadaVul);
+    if (map.hasLayer(camadaUnidades)) camadaUnidades.eachLayer(l => l.bringToFront && l.bringToFront());
+  }).catch(err => console.error('Erro ao carregar a vulnerabilidade:', err));
+}
+
+document.getElementById('camada-vul').addEventListener('change', e => {
+  if (e.target.checked) { desligar('camada-risco'); desligar('camada-arbo'); desligar('camada-com'); camadaVul.addTo(map); carregarVul(); }
+  else map.removeLayer(camadaVul);
+  document.getElementById('controles-vul').classList.toggle('hidden', !e.target.checked);
+  atualizarPainelRisco();
+  redesenharDistritos();
+});
+document.getElementById('vul-indice').addEventListener('change', carregarVul);
+

@@ -99,6 +99,19 @@
                     <div id="legenda-com" class="space-y-1"></div>
                     <p class="text-slate-400">Comunidades de Interesse Social, levantamento de 2014. Nota 0 a 10, maior = pior.</p>
                   </div>
+                  <label class="flex cursor-pointer items-center gap-3 text-sm">
+                    <input type="checkbox" id="camada-vul" class="size-4 accent-blue-600"> Vulnerabilidade
+                    <span class="text-xs text-slate-400">(índice por bairro)</span>
+                  </label>
+                  <div id="controles-vul" class="hidden -mt-1 ml-7 space-y-2 text-[11px] text-slate-600">
+                    <select id="vul-indice" class="rounded border border-slate-300 px-1.5 py-1 text-xs" aria-label="Índice">
+                      <option value="indice">Geral</option>
+                      <option value="indice_estrutural">Estrutural (cadastros)</option>
+                      <option value="indice_historico">Histórico (atendimentos em chuva forte)</option>
+                    </select>
+                    <div id="legenda-vul" class="space-y-1"></div>
+                    <p class="text-slate-400">0 = menos vulnerável, 1 = mais, comparando os 94 bairros entre si.</p>
+                  </div>
                   <p class="pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Saúde</p>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
                     <input type="checkbox" id="camada-arbo" class="size-4 accent-blue-600"> Arboviroses por bairro
