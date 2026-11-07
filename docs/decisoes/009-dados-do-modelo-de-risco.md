@@ -31,3 +31,15 @@ a avaliação otimista: precisa constar no relatório.
 - 2020-2021 (pandemia) têm muito menos atendimentos. Entra como variável.
 - 1% dos atendimentos tem bairro que não casa com o IBGE (apelidos corrigidos).
 - Lonas podem incluir colocação preventiva, antes da chuva.
+
+**Ajustes depois da carga completa.**
+- 2014 fica fora do treino e do teste: o arquivo da Defesa Civil daquele ano tem
+  só 449 atendimentos ligados à chuva, contra 9 a 16 mil nos outros anos. Treino:
+  2015-2021; teste: 2022-2024.
+- Vistorias ficam fora do alvo em todos os distritos: a correlação delas com a
+  chuva de 3 dias (0,03 a 0,20) é sempre menor que a das lonas (0,30 a 0,34), e no
+  DS I é praticamente zero (`analises/ml/tipos_vs_chuva.py`).
+- A tabela separa alagamento e deslizamento (`atendimentos_alagamento`,
+  `atendimentos_deslizamento`): a maré só deveria pesar no alagamento, nos
+  distritos de planície (DS I, IV, V, VI).
+

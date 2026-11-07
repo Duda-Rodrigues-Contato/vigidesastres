@@ -1,0 +1,22 @@
+|--- acumulado 72h antes (mm) <= 13.8
+|   |--- chuva do dia (mm) <= 13.9
+|   |   |--- acumulado 72h antes (mm) <= 0.3
+|   |   |   |--- class: normal
+|   |   |--- acumulado 72h antes (mm) >  0.3
+|   |   |   |--- class: normal
+|   |--- chuva do dia (mm) >  13.9
+|   |   |--- maré máxima (m) <= 1.1
+|   |   |   |--- class: crítico
+|   |   |--- maré máxima (m) >  1.1
+|   |   |   |--- class: normal
+|--- acumulado 72h antes (mm) >  13.8
+|   |--- acumulado 72h antes (mm) <= 51.0
+|   |   |--- maré máxima (m) <= 1.1
+|   |   |   |--- class: crítico
+|   |   |--- maré máxima (m) >  1.1
+|   |   |   |--- class: normal
+|   |--- acumulado 72h antes (mm) >  51.0
+|   |   |--- acumulado 72h antes (mm) <= 122.2
+|   |   |   |--- class: crítico
+|   |   |--- acumulado 72h antes (mm) >  122.2
+|   |   |   |--- class: crítico

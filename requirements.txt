@@ -11,3 +11,7 @@ psycopg[binary]
 pytest-django
 utide
 holidays
+pandas
+scikit-learn
+matplotlib
+xgboost

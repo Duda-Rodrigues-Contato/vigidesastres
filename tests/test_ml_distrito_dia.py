@@ -31,9 +31,10 @@ def test_inmet_cobre_o_distrito_sem_estacao_valida():
 
 
 def test_alvo_contexto_e_calendario():
-    linhas = _montar({}, alvo={(3, D0): (12, 20)})
+    linhas = _montar({}, alvo={(3, D0): (12, 20, 4, 6)})
     l = next(x for x in linhas if x["distrito_codigo"] == 3 and x["data"].date() == D0)
     assert (l["atendimentos_chuva"], l["atendimentos_reativos"]) == (12, 20)
+    assert (l["atendimentos_alagamento"], l["atendimentos_deslizamento"]) == (4, 6)
     assert len(linhas) == 8 * 3 and l["dia_semana"] == 0 and not l["pandemia"]
 
 

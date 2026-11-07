@@ -36,6 +36,9 @@ INICIO, FIM = date(2014, 1, 1), date(2024, 12, 31)
 MIN_LEITURAS = 20       # estação-dia com menos leituras que isso é "sem dado", não "sem chuva"
 MIN_HORAS_INMET = 20
 PANDEMIA = (date(2020, 3, 18), date(2021, 12, 31))
+# separação do alvo por tipo de evento: a maré só pesa no alagamento (planície)
+TERMOS_ALAGAMENTO = ("ALAGA", "INUNDA")
+TERMOS_DESLIZAMENTO = ("DESLIZ", "BARREIRA")
 # nomes da Defesa Civil que não são bairros do IBGE (1% dos atendimentos, ver dias_criticos.py)
 APELIDOS_DC = {**{k: v[0] for k, v in APELIDOS_PLANO.items()}, "BAIRRO DO RECIFE": "RECIFE", "POCO DA PANELA": "POCO"}
 COLECAO_COORD = "silver_estacoes_historico"
@@ -90,7 +93,7 @@ def montar(estacao_dia, distrito_estacao, inmet_dia, mare_dia, alvo_dia, context
       distrito_estacao {codestacao: distrito}
       inmet_dia        {dia: (chuva_mm, max_hora_mm, horas)}
       mare_dia         {dia: (mare_max_m, amplitude_m)}
-      alvo_dia         {(distrito, dia): (chuva, reativos)}
+      alvo_dia         {(distrito, dia): (chuva, reativos, alagamento, deslizamento)}
       contexto         {distrito: {...variáveis fixas do distrito...}}
     """
     # 1. chuva por distrito e dia: a pior estação válida; senão o INMET
@@ -119,7 +122,7 @@ def montar(estacao_dia, distrito_estacao, inmet_dia, mare_dia, alvo_dia, context
             d += timedelta(1)
         d = inicio
         while d <= fim:
-            alvo, reativos = alvo_dia.get((distrito, d), (0, 0))
+            alvo, reativos, alagamento, deslizamento = (tuple(alvo_dia.get((distrito, d), ())) + (0, 0, 0, 0))[:4]
             mare = mare_dia.get(d, (None, None))
             linhas.append({
                 "distrito_codigo": distrito, "distrito": nome_distrito(distrito),
@@ -132,6 +135,7 @@ def montar(estacao_dia, distrito_estacao, inmet_dia, mare_dia, alvo_dia, context
                 "mare_max_m": mare[0], "mare_amplitude_m": mare[1],
                 **contexto.get(distrito, {}),
                 "atendimentos_chuva": alvo, "atendimentos_reativos": reativos,
+                "atendimentos_alagamento": alagamento, "atendimentos_deslizamento": deslizamento,
             })
             d += timedelta(1)
     return linhas
@@ -161,14 +165,18 @@ def ler_entradas(banco, distrito_estacao):
                  for e in banco["silver_chuva_inmet_dia"].find()}
     mare_dia = {m["data"].date(): (m["mare_max_m"], m["amplitude_m"]) for m in banco["silver_mare_calculada_dia"].find()}
     distrito_do_bairro = {b["chave"]: b.get("distrito_codigo") for b in banco["silver_bairros"].find({}, {"chave": 1, "distrito_codigo": 1})}
-    alvo = defaultdict(lambda: [0, 0])
-    for d in banco["silver_defesa_civil_bairro_dia"].find({}, {"data": 1, "bairro": 1, "chuva": 1, "reativos": 1}):
+    alvo = defaultdict(lambda: [0, 0, 0, 0])
+    for d in banco["silver_defesa_civil_bairro_dia"].find({}, {"data": 1, "bairro": 1, "chuva": 1, "reativos": 1,
+                                                              "por_tipo": 1, "por_ocorrencia": 1}):
         bairro = normalizar(d["bairro"])
         distrito = distrito_do_bairro.get(APELIDOS_DC.get(bairro, bairro))
         if distrito:
             a = alvo[(distrito, d["data"].date())]
             a[0] += d.get("chuva") or 0
             a[1] += d.get("reativos") or 0
+            tipos = list((d.get("por_tipo") or {}).items()) + list((d.get("por_ocorrencia") or {}).items())
+            a[2] += sum(n for t, n in tipos if any(x in t for x in TERMOS_ALAGAMENTO))
+            a[3] += sum(n for t, n in tipos if any(x in t for x in TERMOS_DESLIZAMENTO))
     if not estacao_dia:
         raise ValueError("silver_chuva_estacao_dia vazia: rode antes python -m etl.historico.cemaden")
     if not any(a[0] for a in alvo.values()):
