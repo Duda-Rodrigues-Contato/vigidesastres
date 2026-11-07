@@ -61,5 +61,19 @@ def test_mes_com_erro_nao_derruba_a_carga_e_volta_na_proxima(destino):
 def test_janela_e_o_mes_local():
     from datetime import datetime, timezone
     ini, fim = hist.janela_do_mes(2014, 12)
-    assert ini == datetime(2014, 12, 1, 3, tzinfo=timezone.utc)
-    assert fim == datetime(2015, 1, 1, 2, 59, tzinfo=timezone.utc)
+    assert ini == datetime(2014, 12, 1, 3, 1, tzinfo=timezone.utc)
+    assert fim == datetime(2015, 1, 1, 3, 0, tzinfo=timezone.utc)   # a leitura das 00:00 local de 01/01 é do dia 31
+
+
+def test_leitura_da_meia_noite_nao_sobrescreve_o_mes_anterior(destino):
+    class Cliente2(Cliente):
+        def estacoes_do_municipio(self, codibge, uf):
+            return [{"codestacao": "A"}]
+
+        def serie_csv(self, codigo, uf, inicio, fim):
+            if inicio.month == 1:   # janeiro: chuva no dia 31 às 20h local, e a leitura da meia-noite de 01/02
+                return _csv([("2014-01-31 23:00:00", 8.0), ("2014-02-01 03:00:00", 1.0)])
+            return _csv([("2014-02-01 03:00:00", 1.0), ("2014-02-02 15:00:00", 2.0)])  # a API repete a borda
+    hist.carregar(destino, Cliente2(), "2014-01", "2014-02", avisar=lambda s: None, espera=0)
+    dias = {d["data"].strftime("%m-%d"): d["chuva_mm"] for d in destino.banco["silver_chuva_estacao_dia"].find()}
+    assert dias == {"01-31": 9.0, "02-02": 2.0}

@@ -76,14 +76,17 @@ def baixar_mes(cliente, codestacao, ini, fim, espera=ESPERA_ERRO_S):
 
 
 def janela_do_mes(ano, mes):
-    """O mês LOCAL do Recife em UTC: do dia 1 às 00:00 local (03:00 UTC) até o último minuto local do mês.
+    """O mês LOCAL do Recife em UTC, no mesmo critério de por_dia().
 
-    Pedir o mês em UTC cortaria o último dia local: as 3 últimas horas dele (21h-24h)
-    viriam no pedido do mês seguinte, e o upsert apagaria as outras 21.
+    Cada leitura é a chuva do intervalo que TERMINA no seu horário: a das 00:00 local
+    do dia 1 ainda é chuva do último dia do mês anterior. Por isso a janela começa às
+    00:01 local do dia 1 e termina às 00:00 local do dia 1 do mês seguinte (inclusive).
+    Assim cada dia local cai inteiro num único pedido, e nenhum pedido sobrescreve o
+    último dia do mês vizinho.
     """
-    ini = datetime(ano, mes, 1, tzinfo=RECIFE)
-    seguinte = datetime(ano + (mes == 12), mes % 12 + 1, 1, tzinfo=RECIFE)
-    return ini.astimezone(timezone.utc), (seguinte - timedelta(minutes=1)).astimezone(timezone.utc)
+    ini = datetime(ano, mes, 1, 0, 1, tzinfo=RECIFE)
+    fim = datetime(ano + (mes == 12), mes % 12 + 1, 1, tzinfo=RECIFE)
+    return ini.astimezone(timezone.utc), fim.astimezone(timezone.utc)
 
 
 def carregar(destino, cliente, inicio, fim, so_estacao=None, avisar=print, espera=ESPERA_ERRO_S):
@@ -106,7 +109,7 @@ def carregar(destino, cliente, inicio, fim, so_estacao=None, avisar=print, esper
             falhas += 1
             banco[CONTROLE].update_one(chave, {"$set": {"status": "falha", "em": agora}}, upsert=True)
             continue
-        linhas = por_dia(texto, codestacao, agora)
+        linhas = [l for l in por_dia(texto, codestacao, agora) if (l["data"].year, l["data"].month) == (ano, mes)]
         if linhas:
             destino.carregar(Carga(TABELA, linhas, chaves=("codestacao", "data")))
         banco[CONTROLE].update_one(chave, {"$set": {"status": "ok", "dias": len(linhas), "em": agora}}, upsert=True)

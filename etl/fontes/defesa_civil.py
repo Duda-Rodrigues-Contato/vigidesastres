@@ -6,6 +6,9 @@ Fonte: Portal de Dados Abertos do Recife, um CSV por ano (~80 mil linhas).
   silver  silver.defesa_civil_bairro_dia   totais por bairro e dia
   gold    gold.defesa_civil_dia_cidade     totais do Recife por dia
 
+"chuva" conta só os atendimentos ligados à chuva (lona, alagamento, deslizamento,
+barreira), pela solicitação ou pela ocorrência: é o alvo do modelo (decisão 009).
+
 LGPD: a extração lê o CSV linha a linha e soma na hora. Endereco nunca é
 lido para fora da linha, nem guardado. Reativo x rotina: dominio/defesa_civil.py.
 """
@@ -14,7 +17,7 @@ import re
 from itertools import chain
 from datetime import datetime, timezone
 
-from dominio.defesa_civil import eh_reativo, grau_de_risco
+from dominio.defesa_civil import eh_reativo, grau_de_risco, ligado_a_chuva, texto_tipo
 from etl.base import Conector
 from etl.comum.ckan import dataset_por_titulo
 from etl.comum.http import get_bytes
@@ -63,7 +66,7 @@ def _campos(leitor):
 
 
 def _vazio():
-    return {"total": 0, "reativos": 0, "rotina": 0, "por_tipo": {}, "por_risco": {}}
+    return {"total": 0, "reativos": 0, "rotina": 0, "chuva": 0, "por_tipo": {}, "por_ocorrencia": {}, "por_risco": {}}
 
 
 class DefesaCivil(Conector):
@@ -108,8 +111,13 @@ class DefesaCivil(Conector):
         g = grupos.setdefault((data, bairro), _vazio())
         g["total"] += 1
         g["reativos" if eh_reativo(linha.get("Solicitacao"), linha.get("Ocorrencia")) else "rotina"] += 1
-        tipo = normalizar(linha.get("Solicitacao") or "") or "SEM SOLICITACAO"
+        if ligado_a_chuva(linha.get("Solicitacao"), linha.get("Ocorrencia")):
+            g["chuva"] += 1
+        tipo = texto_tipo(linha.get("Solicitacao")) or "SEM SOLICITACAO"
         g["por_tipo"][tipo] = g["por_tipo"].get(tipo, 0) + 1
+        ocorrencia = texto_tipo(linha.get("Ocorrencia"))
+        if ocorrencia:
+            g["por_ocorrencia"][ocorrencia] = g["por_ocorrencia"].get(ocorrencia, 0) + 1
         risco = grau_de_risco(linha.get("Grau_de_Risco"))
         if risco:
             g["por_risco"][risco] = g["por_risco"].get(risco, 0) + 1
@@ -124,9 +132,9 @@ class DefesaCivil(Conector):
     def agregar(self, cargas_silver, coletado_em):
         por_dia = {}
         for l in cargas_silver[0].linhas:
-            d = por_dia.setdefault(l["data"], {"total": 0, "reativos": 0, "rotina": 0,
+            d = por_dia.setdefault(l["data"], {"total": 0, "reativos": 0, "rotina": 0, "chuva": 0,
                                                "bairros_com_reativo": 0})
-            for campo in ("total", "reativos", "rotina"):
+            for campo in ("total", "reativos", "rotina", "chuva"):
                 d[campo] += l[campo]
             d["bairros_com_reativo"] += 1 if l["reativos"] else 0
         gold = [{"data": data, "ano": data.year, **c, "coletado_em": coletado_em}

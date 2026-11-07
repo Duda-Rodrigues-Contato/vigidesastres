@@ -73,3 +73,21 @@ def test_layout_deslocado_le_data_certa_e_ignora_endereco(destino, monkeypatch):
     assert (d["total"], d["reativos"], d["rotina"]) == (2, 1, 1)
     assert set(d["por_tipo"]) == {"MONITORAMENTO", "VISTORIA"}
     assert "Rua Secreta" not in str(d)
+
+
+
+def test_conta_o_que_e_ligado_a_chuva_e_guarda_a_ocorrencia(destino, monkeypatch):
+    _portal_falso(monkeypatch)
+    DefesaCivil(destino, anos=[2024]).executar()
+    silver = {d["bairro"]: d for d in destino.banco["silver_defesa_civil_bairro_dia"].find()}
+    assert silver["AGUA FRIA"]["chuva"] == 1                    # lona sim, monitoramento não
+    assert silver["IBURA"]["chuva"] == 1                        # alagamento só na ocorrência também conta
+    assert silver["IBURA"]["por_ocorrencia"] == {"ALAGAMENTOS": 1}
+    assert destino.banco["gold_defesa_civil_dia_cidade"].find_one()["chuva"] == 2
+
+
+def test_vistoria_de_imovel_nao_e_chuva_e_acento_corrigido():
+    from dominio.defesa_civil import ligado_a_chuva, texto_tipo
+    assert not ligado_a_chuva("Vistoria em Imóveis", "")
+    assert ligado_a_chuva("", "Deslizamentos de Barreiras")
+    assert texto_tipo("Vistoria em Im\ufffdveis") == "VISTORIA EM IMOVEIS"

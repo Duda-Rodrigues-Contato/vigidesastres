@@ -95,3 +95,53 @@ def situacao_csv(request):
         w.writerow([d["nome"], d["nivel"], d["chuva_24h_mm"], d["estacao_24h"], d["chuva_72h_mm"],
                     d["previsao_24h_mm"], d["alertas_abertos"], " | ".join(d["motivos"])])
     return resposta
+
+
+MESES_CURTOS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
+
+
+def _tom(indice):
+    """Cor da célula pelo índice (mês ÷ média do próprio distrito)."""
+    if indice >= 2:
+        return "muito_alto"
+    if indice >= 1.5:
+        return "alto"
+    if indice >= 1:
+        return "acima"
+    return "abaixo" if indice >= 0.6 else "baixo"
+
+
+def calendario(request):
+    """Calendário de risco: em que meses cada distrito mais precisa de equipe."""
+    from apps.fontes.repositorios import calendario as repo_calendario
+    linhas, erro = [], False
+    try:
+        meses, resumos = repo_calendario.por_mes(), {r["distrito_codigo"]: r for r in repo_calendario.por_distrito()}
+        por_distrito = {}
+        for m in meses:
+            por_distrito.setdefault(m["distrito_codigo"], []).append({
+                **m, "tom": _tom(m["indice"]), "rotulo": MESES_CURTOS[m["mes"] - 1],
+                "dica": (f"{m['media_dia']} atendimentos/dia em média ({m['indice']}x a média do distrito). "
+                         f"Ano mais calmo: {m['ano_calmo']} ({m['media_ano_calmo']}/dia); "
+                         f"mais intenso: {m['ano_intenso']} ({m['media_ano_intenso']}/dia).")})
+        for codigo, celulas in sorted(por_distrito.items()):
+            linhas.append({"nome": celulas[0]["distrito"], "celulas": celulas, "resumo": resumos.get(codigo, {})})
+    except PyMongoError:
+        logger.exception("Falha ao ler o calendário de risco")
+        erro = True
+    return render(request, "painel/calendario.html", {"linhas": linhas, "meses": MESES_CURTOS, "erro": erro})
+
+
+def calendario_csv(request):
+    from apps.fontes.repositorios import calendario as repo_calendario
+    resposta = HttpResponse(content_type="text/csv; charset=utf-8")
+    resposta["Content-Disposition"] = 'attachment; filename="calendario_risco.csv"'
+    resposta.write("\ufeff")
+    w = csv.writer(resposta, delimiter=";")
+    w.writerow(["Distrito", "Mês", "Atendimentos reativos por dia (média 2014-2024)", "Índice (mês / média do distrito)",
+                "Ano mais calmo", "Média no ano mais calmo", "Ano mais intenso", "Média no ano mais intenso"])
+    for m in repo_calendario.por_mes():
+        w.writerow([m["distrito"], m["mes"], m["media_dia"], m["indice"], m["ano_calmo"], m["media_ano_calmo"],
+                    m["ano_intenso"], m["media_ano_intenso"]])
+    return resposta
+

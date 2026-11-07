@@ -8,6 +8,9 @@
 <a href="{% url 'alertas' %}" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold transition-colors {% if current == 'alertas' %}bg-slate-800 text-white{% else %}text-slate-400 hover:bg-slate-800 hover:text-white{% endif %}">
   <i data-lucide="bell-ring" class="w-5 h-5"></i><span>Alertas</span>
 </a>
+<a href="{% url 'calendario' %}" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold transition-colors {% if current == 'calendario' %}bg-slate-800 text-white{% else %}text-slate-400 hover:bg-slate-800 hover:text-white{% endif %}">
+  <i data-lucide="calendar-range" class="w-5 h-5"></i><span>Calendário</span>
+</a>
 <a href="{% url 'relatorios' %}" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold transition-colors {% if current == 'relatorios' %}bg-slate-800 text-white{% else %}text-slate-400 hover:bg-slate-800 hover:text-white{% endif %}">
   <i data-lucide="file-bar-chart" class="w-5 h-5"></i><span>Relatórios</span>
 </a>

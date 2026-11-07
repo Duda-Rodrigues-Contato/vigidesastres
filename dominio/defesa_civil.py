@@ -15,12 +15,34 @@ from etl.comum.texto import normalizar
 TERMOS_REATIVOS = ("LONA", "VISTORIA", "ALAGA", "DESLIZ", "BARREIRA", "DESABA", "DANO")
 RISCOS = ("R1", "R2", "R3", "R4")
 
+# alvo do modelo de risco (decisão 009): só o que é ligado à chuva. Vistorias e
+# monitoramento de imóveis ficam de fora: no centro (DS I) são casarões antigos
+# vistoriados na estação seca, sem relação com o clima.
+TERMOS_CHUVA = ("LONA", "ALAGA", "INUNDA", "DESLIZ", "BARREIRA")
+
+# erros de acento herdados dos arquivos do portal (2022 vem em Windows-1252)
+CORRECOES = {"IMVEIS": "IMOVEIS"}
+
 
 def eh_reativo(solicitacao, ocorrencia):
     if normalizar(ocorrencia or ""):
         return True
     s = normalizar(solicitacao or "")
     return any(t in s for t in TERMOS_REATIVOS)
+
+
+def texto_tipo(valor):
+    """Solicitação ou ocorrência normalizada, com os erros de acento conhecidos corrigidos."""
+    t = normalizar(valor or "")
+    for errado, certo in CORRECOES.items():
+        t = t.replace(errado, certo)
+    return t
+
+
+def ligado_a_chuva(solicitacao, ocorrencia):
+    """O atendimento é resposta a um efeito da chuva? Olha a solicitação E a ocorrência."""
+    texto = texto_tipo(solicitacao) + " " + texto_tipo(ocorrencia)
+    return any(t in texto for t in TERMOS_CHUVA)
 
 
 def grau_de_risco(valor):

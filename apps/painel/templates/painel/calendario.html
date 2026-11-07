@@ -1,0 +1,72 @@
+{% extends 'components/app-shell.html' %}
+
+{% block title %}Calendário de risco{% endblock %}
+{% block page_title %}Calendário de risco{% endblock %}
+
+{% block content %}
+<header class="mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
+  <div class="min-w-0">
+    <h1 class="text-2xl font-bold text-slate-900 md:text-3xl">Calendário de risco</h1>
+    <p class="mt-1 text-sm text-slate-500">Em que época do ano cada distrito mais precisa de equipe · atendimentos reativos da Defesa Civil, 2014–2024</p>
+  </div>
+  {% if linhas %}<a href="{% url 'calendario_csv' %}" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Baixar planilha</a>{% endif %}
+</header>
+
+{% if erro %}
+<p class="rounded-md bg-red-50 p-4 text-sm text-red-800">Não foi possível ler o calendário no banco.</p>
+{% elif not linhas %}
+<p class="rounded-md bg-slate-50 p-4 text-sm text-slate-600">Calendário ainda não calculado. Rode <code>python -m etl.derivados.calendario</code>.</p>
+{% else %}
+<section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+  <h2 class="font-bold text-slate-900">Intensidade por mês</h2>
+  <p class="mb-4 text-xs text-slate-500">Número na célula: atendimentos por dia, em média. Cor: comparação com a média do próprio distrito (cada linha tem a sua escala). Passe o mouse para ver os anos mais calmo e mais intenso.</p>
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[760px] border-separate border-spacing-1 text-center text-xs">
+      <thead>
+        <tr><th class="text-left text-slate-500">Distrito</th>{% for m in meses %}<th class="font-semibold uppercase text-slate-500">{{ m }}</th>{% endfor %}</tr>
+      </thead>
+      <tbody>
+        {% for l in linhas %}
+        <tr>
+          <td class="whitespace-nowrap pr-2 text-left text-sm {% if forloop.first %}font-bold{% else %}font-semibold{% endif %} text-slate-900">{{ l.nome }}</td>
+          {% for c in l.celulas %}
+          <td title="{{ c.dica }}" class="rounded py-2 font-semibold
+            {% if c.tom == 'muito_alto' %}bg-red-500 text-white{% elif c.tom == 'alto' %}bg-orange-300 text-orange-950{% elif c.tom == 'acima' %}bg-amber-100 text-amber-900{% elif c.tom == 'abaixo' %}bg-sky-50 text-slate-600{% else %}bg-slate-50 text-slate-400{% endif %}">{{ c.media_dia|floatformat:0 }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-500">
+    <span><span class="inline-block size-3 rounded bg-red-500 align-middle"></span> 2× a média ou mais</span>
+    <span><span class="inline-block size-3 rounded bg-orange-300 align-middle"></span> 1,5× a 2×</span>
+    <span><span class="inline-block size-3 rounded bg-amber-100 align-middle"></span> acima da média</span>
+    <span><span class="inline-block size-3 rounded bg-sky-50 align-middle ring-1 ring-slate-200"></span> abaixo</span>
+    <span><span class="inline-block size-3 rounded bg-slate-50 align-middle ring-1 ring-slate-200"></span> bem abaixo</span>
+  </p>
+</section>
+
+<section class="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+  <h2 class="mb-4 font-bold text-slate-900">Resumo para o planejamento</h2>
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[620px] text-left text-sm">
+      <thead class="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+        <tr><th class="py-2 pr-3">Distrito</th><th class="py-2 pr-3">Período crítico</th><th class="py-2 pr-3">Semana de pico</th><th class="py-2">Média no ano</th></tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for l in linhas %}
+        <tr>
+          <td class="py-2 pr-3 font-semibold text-slate-900">{{ l.nome }}</td>
+          <td class="py-2 pr-3 capitalize">{{ l.resumo.periodo_critico }}</td>
+          <td class="py-2 pr-3">{{ l.resumo.pico_texto }} <span class="text-xs text-slate-400">({{ l.resumo.media_semana_pico }}/dia)</span></td>
+          <td class="py-2">{{ l.resumo.media_anual_dia }} por dia</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="mt-3 text-xs text-slate-500">Período crítico: meses seguidos com 50% ou mais acima da média do próprio distrito. Os "reativos" incluem colocação de lonas, que em parte pode ser preventiva.</p>
+</section>
+{% endif %}
+{% endblock %}
