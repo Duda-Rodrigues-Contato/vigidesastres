@@ -10,3 +10,4 @@ dj-database-url
 psycopg[binary]
 pytest-django
 utide
+holidays
