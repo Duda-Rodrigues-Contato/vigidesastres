@@ -3,7 +3,7 @@
 Fontes: limites - Portal de Dados Abertos do Recife; população - IBGE, Censo 2022.
 
   bronze  bronze_bairros     as linhas do IBGE do Recife (dado público e agregado)
-  silver  silver.bairros     um bairro por documento: nome, chave, população, área, geometria
+  silver  silver.bairros     um bairro por documento: nome, chave, população, área, geometria, distrito
 
 Cadastro de referência: cada carga substitui a anterior.
 """
@@ -16,6 +16,7 @@ from shapely.ops import unary_union
 from etl.base import Conector
 from etl.comum import ibge
 from etl.comum.bairros import baixar_bairros, para_latlon
+from etl.comum.distritos import distrito_de, distritos_poligonos
 from etl.comum.texto import normalizar
 from etl.destinos.base import Carga
 
@@ -26,7 +27,7 @@ class Bairros(Conector):
     descricao = "Limites e população dos bairros (portal do Recife + IBGE Censo 2022)"
 
     def extrair(self):
-        return {"ibge": ibge.linhas_do_recife(), "limites": baixar_bairros()}
+        return {"ibge": ibge.linhas_do_recife(), "limites": baixar_bairros(), "distritos": distritos_poligonos()}
 
     def documentos_bronze(self, bruto):
         return bruto["ibge"]
@@ -50,9 +51,15 @@ class Bairros(Conector):
             if chave not in geometrias:
                 sem_limite.append(b["nome"])
                 continue
-            docs.append({**b, "chave": chave, "geometria": mapping(unary_union(geometrias[chave])),
+            geometria = unary_union(geometrias[chave])
+            docs.append({**b, "chave": chave, "geometria": mapping(geometria),
+                         "distrito_codigo": distrito_de(geometria, bruto["distritos"]),
                          "fonte_populacao": ibge.FONTE, "coletado_em": coletado_em})
         total = sum(d["populacao"] for d in docs)
+        por_distrito = {}
+        for d in docs:
+            por_distrito[d["distrito_codigo"]] = por_distrito.get(d["distrito_codigo"], 0) + 1
+        print(f"  [{self.nome}] bairros por distrito: {dict(sorted(por_distrito.items()))}")
         print(f"  [{self.nome}] {len(docs)} bairros, {total:,} habitantes".replace(",", ".")
               + (f" | sem limite no mapa: {sem_limite}" if sem_limite else ""))
         return [Carga("silver.bairros", docs)]

@@ -83,10 +83,12 @@ def test_bairros_e_repositorios(destino, monkeypatch):
     monkeypatch.setattr(mod_bairros, "baixar_bairros", lambda: [
         {"properties": {"NOME": "IBURA", "Nome": "Ibura"}, "geometry": mapping(box(-34.95, -8.15, -34.93, -8.13))},
         {"properties": {"NOME": "RECIFE", "Nome": "Bairro do Recife"}, "geometry": mapping(box(-34.88, -8.07, -34.87, -8.06))}])
+    monkeypatch.setattr(mod_bairros, "distritos_poligonos", lambda: {
+        8: box(-34.96, -8.16, -34.92, -8.12), 1: box(-34.89, -8.08, -34.86, -8.05)})
     Bairros(destino).executar()
     ArbovirosesBairros(destino, anos=[2024]).executar()
     monkeypatch.setattr(conexao, "banco", lambda: destino.banco)
-    assert {b["chave"] for b in referencia.bairros()} == {"IBURA", "RECIFE"}
+    assert {b["chave"]: b["distrito_codigo"] for b in referencia.bairros()} == {"IBURA": 8, "RECIFE": 1}
     assert repo_arbo.anos_por_bairro() == [2024]
     linhas = repo_arbo.por_bairro(2024, ["dengue", "zika"])
     assert {(l["chave"], l["doenca"]) for l in linhas} == {("IBURA", "dengue"), ("RECIFE", "dengue"),

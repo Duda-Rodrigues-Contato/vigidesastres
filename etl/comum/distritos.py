@@ -21,3 +21,13 @@ def distritos_poligonos():
     recurso = recurso_por_formato(pacote_por_id(DATASET), "GEOJSON")
     features = json.loads(get_bytes(recurso["url"]))["features"]
     return {f["properties"]["cdistscodi"]: shape(f["geometry"]) for f in features}
+
+
+def distrito_de(geometria, poligonos):
+    """Código do distrito que cobre a maior parte da geometria (bairro na divisa fica no maior pedaço)."""
+    areas = {codigo: geometria.intersection(poli).area for codigo, poli in poligonos.items()}
+    codigo, area = max(areas.items(), key=lambda par: par[1])
+    if area > 0:
+        return codigo
+    # fora de todos (erro de borda no litoral): o distrito mais próximo
+    return min(poligonos, key=lambda c: poligonos[c].distance(geometria))
