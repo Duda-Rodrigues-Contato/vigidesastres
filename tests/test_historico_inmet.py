@@ -35,3 +35,16 @@ def test_retoma_por_ano(destino):
     inmet.carregar(destino, 2023, 2024, baixar=baixar, avisar=lambda s: None)
     assert baixados == [2023, 2024]                             # a segunda rodada não baixa de novo
     assert destino.banco["silver_chuva_inmet_dia"].count_documents({}) == 1
+
+
+def test_noite_do_ano_anterior_nao_apaga_o_31_de_dezembro(destino):
+    def pacote(ano):
+        linhas = ("Data;Hora UTC;PRECIPITAÇÃO TOTAL, HORÁRIO (mm);\n"
+                  + ("2019/12/31;1200 UTC;10,0;\n" if ano == 2019 else "2020/01/01;0100 UTC;1,0;\n2020/01/01;1200 UTC;2,0;\n"))
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as z:
+            z.writestr("INMET_NE_PE_A301_RECIFE.CSV", (CAB + linhas).encode("latin-1"))
+        return buf.getvalue()
+    inmet.carregar(destino, 2019, 2020, baixar=pacote, avisar=lambda s: None)
+    dias = {d["data"].strftime("%Y-%m-%d"): d["chuva_mm"] for d in destino.banco["silver_chuva_inmet_dia"].find()}
+    assert dias == {"2019-12-31": 10.0, "2020-01-01": 2.0}   # 01:00 UTC de 01/01 (22h local de 31/12) não sobrescreve

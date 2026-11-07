@@ -97,14 +97,17 @@ def carregar(destino, inicio, fim, baixar=lambda ano: get_bytes(URL.format(ano=a
         avisar(f"  {ano}: baixando o pacote do ano (arquivo grande, alguns minutos)...")
         agora = datetime.now(timezone.utc)
         texto = csv_da_estacao(baixar(ano))
-        linhas = por_dia(texto, agora) if texto else []
+        # o pacote é do ano em UTC: as 3 primeiras horas dele são a noite de 31/12 do ano anterior
+        # no Recife. Ficam de fora para não apagar aquele dia (já gravado com as outras 21 horas).
+        linhas = [l for l in por_dia(texto, agora) if l["ano"] == ano] if texto else []
         if linhas:
             destino.carregar(Carga(TABELA, linhas, chaves=("data",)))
         banco[CONTROLE].update_one({"fonte": "inmet", "mes": str(ano)},
                                    {"$set": {"dias": len(linhas), "em": agora}}, upsert=True)
         completos = sum(l["horas_com_dado"] >= 20 for l in linhas)
-        avisar(f"  {ano}: {len(linhas)} dias com dado ({completos} com 20 h ou mais)"
-               + ("" if texto else f" | estação {ESTACAO} não está no pacote deste ano"))
+        motivo = (f" | estação {ESTACAO} não está no pacote deste ano" if not texto
+                  else " | a estação está no pacote, mas sem nenhum valor de chuva" if not linhas else "")
+        avisar(f"  {ano}: {len(linhas)} dias com dado ({completos} com 20 h ou mais){motivo}")
 
 
 def main():

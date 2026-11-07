@@ -56,3 +56,10 @@ def test_mes_com_erro_nao_derruba_a_carga_e_volta_na_proxima(destino):
     c2 = Cliente()
     hist.carregar(destino, c2, "2014-01", "2014-02", avisar=lambda s: None, espera=0)
     assert c2.pedidos == [("A", "2014-02"), ("B", "2014-02")]   # só os que falharam
+
+
+def test_janela_e_o_mes_local():
+    from datetime import datetime, timezone
+    ini, fim = hist.janela_do_mes(2014, 12)
+    assert ini == datetime(2014, 12, 1, 3, tzinfo=timezone.utc)
+    assert fim == datetime(2015, 1, 1, 2, 59, tzinfo=timezone.utc)

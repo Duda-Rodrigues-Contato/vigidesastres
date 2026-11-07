@@ -16,7 +16,6 @@ Uso:
 """
 
 import argparse
-import calendar
 import time
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
@@ -76,6 +75,17 @@ def baixar_mes(cliente, codestacao, ini, fim, espera=ESPERA_ERRO_S):
     return None
 
 
+def janela_do_mes(ano, mes):
+    """O mês LOCAL do Recife em UTC: do dia 1 às 00:00 local (03:00 UTC) até o último minuto local do mês.
+
+    Pedir o mês em UTC cortaria o último dia local: as 3 últimas horas dele (21h-24h)
+    viriam no pedido do mês seguinte, e o upsert apagaria as outras 21.
+    """
+    ini = datetime(ano, mes, 1, tzinfo=RECIFE)
+    seguinte = datetime(ano + (mes == 12), mes % 12 + 1, 1, tzinfo=RECIFE)
+    return ini.astimezone(timezone.utc), (seguinte - timedelta(minutes=1)).astimezone(timezone.utc)
+
+
 def carregar(destino, cliente, inicio, fim, so_estacao=None, avisar=print, espera=ESPERA_ERRO_S):
     banco = destino.banco
     # só o que deu certo conta como feito; mês que falhou é tentado de novo na próxima rodada
@@ -88,8 +98,7 @@ def carregar(destino, cliente, inicio, fim, so_estacao=None, avisar=print, esper
            f"(~{len(pendentes) * 5.5 / 3600:.1f} h pelo limite de 12 requisições/min)")
     falhas = 0
     for n, (codestacao, ano, mes) in enumerate(pendentes, start=1):
-        ini = datetime(ano, mes, 1, tzinfo=timezone.utc)
-        fim_mes = datetime(ano, mes, calendar.monthrange(ano, mes)[1], 23, 59, tzinfo=timezone.utc)
+        ini, fim_mes = janela_do_mes(ano, mes)
         agora = datetime.now(timezone.utc)
         texto = baixar_mes(cliente, codestacao, ini, fim_mes, espera)
         chave = {"fonte": "cemaden", "codestacao": codestacao, "mes": f"{ano}-{mes:02d}"}
