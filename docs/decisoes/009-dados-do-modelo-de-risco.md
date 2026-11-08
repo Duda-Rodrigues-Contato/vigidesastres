@@ -43,3 +43,15 @@ a avaliação otimista: precisa constar no relatório.
   `atendimentos_deslizamento`): a maré só deveria pesar no alagamento, nos
   distritos de planície (DS I, IV, V, VI).
 
+**Revisão do alvo depois do primeiro treino.** Com o alvo "acima do p95 do
+distrito", o XGBoost aprendeu o calendário da Defesa Civil (mês, fim de semana,
+dia da semana e pandemia somavam metade da importância) e perdeu para os limiares
+atuais (F1 0,12 contra 0,20). Os "dias críticos" eram, em boa parte, dias de muito
+trabalho programado (campanha de lonas na estação chuvosa), e os registros caem
+ano a ano (1,7% de dias críticos no teste contra 4% no treino). Novo alvo: PICO —
+algum dia entre D e D+2 com atendimentos ligados à chuva de pelo menos 3 vezes a
+média diária dos 28 dias anteriores, com mínimo de 5. A janela de 3 dias absorve
+o atraso de resposta e o fim de semana. Limitação: o início de uma campanha de
+lonas pode aparecer como pico nos primeiros dias, até a rotina subir. Saem das entradas dia da semana, fim de
+semana, feriado e pandemia: num alerta, prever "segunda-feira" não ajuda.
+

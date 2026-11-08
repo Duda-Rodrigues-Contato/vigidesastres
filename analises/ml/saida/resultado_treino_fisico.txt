@@ -1,0 +1,33 @@
+alvo 'fisico': algum dia entre D e D+2 com atendimentos_fisicos >= 3x a rotina dos 28 dias anteriores e >= rotina + 3 (mínimo 3)
+treino 20456 linhas (377 picos, 1.8%) | teste 8768 linhas (388 picos, 4.4%)
+Árvore de decisão: melhores {'max_depth': 12, 'min_samples_leaf': 50} | precisão média na validação cruzada 0.101
+   limiar 0.000 em 2021: recall 100%, precisão 2%
+XGBoost: melhores {'learning_rate': 0.1, 'max_depth': 3, 'n_estimators': 200} | precisão média na validação cruzada 0.137
+   limiar 0.147 em 2021: recall 81%, precisão 5%
+XGBoost SEM chuva (controle): melhores {'learning_rate': 0.05, 'max_depth': 3, 'n_estimators': 200} | precisão média na validação cruzada 0.037
+   limiar 0.171 em 2021: recall 81%, precisão 4%
+
+Teste 2022-2024 (usado uma única vez):
+Limiares atuais (só ALTO)    recall 38% | precisão 29% | F1 0.33 | 509 alertas para 388 dias críticos
+Limiares atuais (MÉDIO+)     recall 61% | precisão 17% | F1 0.26 | 1402 alertas para 388 dias críticos
+Árvore de decisão            recall 100% | precisão 4% | F1 0.09 | 8768 alertas para 388 dias críticos
+XGBoost                      recall 68% | precisão 10% | F1 0.17 | 2676 alertas para 388 dias críticos
+XGBoost SEM chuva (controle) recall 84% | precisão 7% | F1 0.12 | 4872 alertas para 388 dias críticos
+
+Contribuição da chuva: F1 0.17 com chuva x 0.12 sem chuva (+0.05)
+Escolhido pela validação de 2021: XGBoost
+
+VEREDITO: F1 0.17 | controle sem chuva 0.12 | limiares atuais 0.33 -> NÃO APROVADO: os gatilhos atuais continuam; o modelo vira resultado do relatório
+Importância das entradas: chuva_7d_mm 0.23, chuva_3d_mm 0.14, max_hora_mm 0.10, distrito_codigo 0.10, mes 0.10, chuva_dia_mm 0.07, acumulado_72h_antes 0.07, mare_max_m 0.06
+
+Por distrito no teste (modelo escolhido):
+  DS 1                       recall 20% | precisão 8% | F1 0.12 | 72 alertas para 30 dias críticos
+  DS 2                       recall 93% | precisão 11% | F1 0.20 | 460 alertas para 54 dias críticos
+  DS 3                       recall 78% | precisão 10% | F1 0.18 | 307 alertas para 40 dias críticos
+  DS 4                       recall 75% | precisão 10% | F1 0.17 | 476 alertas para 61 dias críticos
+  DS 5                       recall 73% | precisão 12% | F1 0.20 | 397 alertas para 64 dias críticos
+  DS 6                       recall 42% | precisão 13% | F1 0.19 | 151 alertas para 45 dias críticos
+  DS 7                       recall 55% | precisão 9% | F1 0.16 | 324 alertas para 55 dias críticos
+  DS 8                       recall 87% | precisão 7% | F1 0.13 | 489 alertas para 39 dias críticos
+
+Modelo salvo em C:\Users\mathe\Desktop\vigidesastres\modelos\risco.joblib
