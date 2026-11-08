@@ -1,0 +1,14 @@
+
+Experimento A: escala diária (GTSM)
+   treino 8764 linhas (213 com alagamento) | teste 4384 (168 com alagamento)
+   com maré                     recall 55% | precisão 5% | F1 0.09 | 1844 alertas para 168 dias críticos | precisão média 0.059
+   sem maré                     recall 32% | precisão 7% | F1 0.11 | 779 alertas para 168 dias críticos | precisão média 0.077
+   importância (com maré): mes 0.16, distrito_codigo 0.14, chuva_3d_mm 0.11, chuva_7d_mm 0.11, nivel_total_max_m 0.08, ressaca_max_m 0.08
+   VEREDITO SEM EFEITO DA MARÉ: precisão média 0.059 com maré x 0.077 sem (-0.018) | F1 0.09 x 0.11
+
+Experimento B: maré na hora do pico de chuva (INMET + maré horária)
+   treino 3776 linhas (116 com alagamento) | teste 1960 (8 com alagamento)
+   com maré                     recall 100% | precisão 0% | F1 0.01 | 1506 alertas para 8 dias críticos | precisão média 0.008
+   sem maré                     recall 88% | precisão 0% | F1 0.01 | 1680 alertas para 8 dias críticos | precisão média 0.013
+   importância (com maré): chuva_7d_mm 0.15, distrito_codigo 0.14, chuva_3d_mm 0.14, mes 0.10, mare_hora_pico_m 0.10, chuva_pico_mm 0.09
+   VEREDITO SEM EFEITO DA MARÉ: precisão média 0.008 com maré x 0.013 sem (-0.005) | F1 0.01 x 0.01

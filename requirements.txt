@@ -15,3 +15,6 @@ pandas
 scikit-learn
 matplotlib
 xgboost
+cdsapi
+xarray
+netCDF4

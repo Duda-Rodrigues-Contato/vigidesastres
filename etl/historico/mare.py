@@ -12,6 +12,7 @@ Método (análise harmônica, biblioteca utide):
   4. resume por dia local: maré máxima, mínima e amplitude
 
   silver  silver.mare_calculada_dia   uma linha por dia
+  silver  silver.mare_calculada_hora  o nível hora a hora (UTC), para saber a maré NA HORA da chuva
 
 Limitação: não inclui ressaca (vento e pressão). Cobre o que mais importa para
 alagamento: saber se a chuva caiu em maré de sizígia (as cheias mais altas).
@@ -55,17 +56,22 @@ def ajustar(tempos, niveis):
     return coef, float(np.sqrt(np.mean((refeito - niveis) ** 2)))
 
 
-def por_dia(coef, inicio, fim, coletado_em):
-    """Nível hora a hora de inicio a fim (datas locais), resumido por dia local do Recife."""
+def serie_horaria(coef, inicio, fim):
+    """[(hora UTC sem fuso, nível)] de inicio a fim (datas locais do Recife)."""
     import utide
     ini = datetime(inicio.year, inicio.month, inicio.day, tzinfo=RECIFE).astimezone(timezone.utc)
     horas = int(((fim - inicio).days + 1) * 24)
     tempos = np.array([np.datetime64(ini.replace(tzinfo=None) + timedelta(hours=h)) for h in range(horas)])
     nivel = utide.reconstruct(tempos, coef, verbose=False).h
+    return [(t.astype(datetime), float(v)) for t, v in zip(tempos, nivel)]
+
+
+def por_dia(horarios, coletado_em):
+    """Série horária resumida por dia local do Recife: máxima, mínima e amplitude."""
     dias = {}
-    for t, v in zip(tempos, nivel):
-        dia = (t.astype(datetime).replace(tzinfo=timezone.utc)).astimezone(RECIFE).date()
-        dias.setdefault(dia, []).append(float(v))
+    for t, v in horarios:
+        dia = t.replace(tzinfo=timezone.utc).astimezone(RECIFE).date()
+        dias.setdefault(dia, []).append(v)
     return [{"data": datetime(d.year, d.month, d.day), "ano": d.year,
              "mare_max_m": round(max(v), 3), "mare_min_m": round(min(v), 3),
              "amplitude_m": round(max(v) - min(v), 3), "fonte": FONTE, "coletado_em": coletado_em}
@@ -81,8 +87,13 @@ def carregar(destino, inicio, fim, serie=serie_recente, avisar=print):
     principais = sorted(zip(coef.name, coef.A), key=lambda c: -c[1])[:5]
     avisar("componentes principais (amplitude em m): " + ", ".join(f"{n} {a:.2f}" for n, a in principais))
     avisar(f"erro médio do ajuste na série recente: {erro:.2f} m (inclui o que não é maré: vento, pressão)")
-    linhas = por_dia(coef, inicio, fim, datetime.now(timezone.utc))
+    agora = datetime.now(timezone.utc)
+    horarios = serie_horaria(coef, inicio, fim)
+    linhas = por_dia(horarios, agora)
     destino.carregar(Carga(TABELA, linhas, chaves=("data",)))
+    destino.carregar(Carga("silver.mare_calculada_hora",
+                           [{"hora": h, "nivel_m": round(v, 3), "fonte": FONTE, "coletado_em": agora}
+                            for h, v in horarios], chaves=("hora",)))
     amplitudes = sorted(l["amplitude_m"] for l in linhas)
     avisar(f"{len(linhas)} dias gravados | amplitude diária de {amplitudes[0]:.2f} a {amplitudes[-1]:.2f} m")
 

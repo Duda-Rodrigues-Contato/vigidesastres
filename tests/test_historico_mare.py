@@ -27,6 +27,7 @@ def test_historico_diario_tem_sizigia_e_quadratura(destino):
     assert len(dias) == 31
     maximos = [d["mare_max_m"] for d in dias]
     assert max(maximos) > 1.0 and min(maximos) < 0.7      # o ciclo de ~15 dias aparece no histórico
+    assert destino.banco["silver_mare_calculada_hora"].count_documents({}) == 31 * 24
 
 
 def test_serie_curta_demais_e_recusada(destino):

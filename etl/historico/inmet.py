@@ -70,7 +70,7 @@ def por_dia(texto, coletado_em):
     cab = [c.strip().upper() for c in linhas[ini].split(";")]
     c_data, c_hora = 0, 1
     c_chuva = next(i for i, c in enumerate(cab) if c.startswith("PRECIPITA"))
-    total, maior, horas = defaultdict(float), defaultdict(float), defaultdict(int)
+    total, maior, horas, pico = defaultdict(float), defaultdict(float), defaultdict(int), {}
     for l in leitor:
         if len(l) <= c_chuva or not l[c_data].strip():
             continue
@@ -78,18 +78,24 @@ def por_dia(texto, coletado_em):
         if valor is None:
             continue
         # a hora registrada é o FIM do intervalo: a chuva das 00 UTC é da hora anterior
-        dia = (_quando(l[c_data], l[c_hora]) - timedelta(minutes=1)).astimezone(RECIFE).date()
+        quando = _quando(l[c_data], l[c_hora])
+        dia = (quando - timedelta(minutes=1)).astimezone(RECIFE).date()
         total[dia] += valor
+        if valor > maior[dia] or dia not in pico:
+            # a leitura fecha a hora: a chuva caiu na hora ANTERIOR (início do intervalo, em UTC)
+            pico[dia] = (quando - timedelta(hours=1)).replace(tzinfo=None) if valor > 0 else None
         maior[dia] = max(maior[dia], valor)
         horas[dia] += 1
     return [{"data": datetime(d.year, d.month, d.day), "ano": d.year, "chuva_mm": round(total[d], 1),
-             "max_hora_mm": round(maior[d], 1), "horas_com_dado": horas[d], "fonte": FONTE,
+             "max_hora_mm": round(maior[d], 1), "horas_com_dado": horas[d], "hora_pico_utc": pico.get(d),
+             "fonte": FONTE,
              "coletado_em": coletado_em} for d in sorted(total)]
 
 
-def carregar(destino, inicio, fim, baixar=lambda ano: get_bytes(URL.format(ano=ano), timeout=600), avisar=print):
+def carregar(destino, inicio, fim, baixar=lambda ano: get_bytes(URL.format(ano=ano), timeout=600), avisar=print,
+             refazer=False):
     banco = destino.banco
-    feitos = {c["mes"] for c in banco[CONTROLE].find({"fonte": "inmet"})}
+    feitos = set() if refazer else {c["mes"] for c in banco[CONTROLE].find({"fonte": "inmet"})}
     for ano in range(inicio, fim + 1):
         if str(ano) in feitos:
             avisar(f"  {ano}: já carregado")
@@ -114,9 +120,10 @@ def main():
     p = argparse.ArgumentParser(description="Carga histórica do INMET (retomável, por ano).")
     p.add_argument("--inicio", type=int, default=2014)
     p.add_argument("--fim", type=int, default=2024)
+    p.add_argument("--refazer", action="store_true", help="baixa de novo mesmo os anos já carregados")
     a = p.parse_args()
     try:
-        carregar(obter_destino(), a.inicio, a.fim, avisar=lambda s: print(s, flush=True))
+        carregar(obter_destino(), a.inicio, a.fim, avisar=lambda s: print(s, flush=True), refazer=a.refazer)
     except KeyboardInterrupt:
         print("\nInterrompido. Rode o mesmo comando para continuar de onde parou.")
 
