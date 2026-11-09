@@ -1,14 +1,16 @@
 
 Experimento A: escala diária (GTSM)
    treino 8764 linhas (213 com alagamento) | teste 4384 (168 com alagamento)
-   com maré                     recall 55% | precisão 5% | F1 0.09 | 1844 alertas para 168 dias críticos | precisão média 0.059
-   sem maré                     recall 32% | precisão 7% | F1 0.11 | 779 alertas para 168 dias críticos | precisão média 0.077
-   importância (com maré): mes 0.16, distrito_codigo 0.14, chuva_3d_mm 0.11, chuva_7d_mm 0.11, nivel_total_max_m 0.08, ressaca_max_m 0.08
-   VEREDITO SEM EFEITO DA MARÉ: precisão média 0.059 com maré x 0.077 sem (-0.018) | F1 0.09 x 0.11
+   com maré                     recall 89% | precisão 5% | F1 0.09 | 3196 alertas para 168 dias críticos | precisão média 0.058
+   sem maré                     recall 33% | precisão 7% | F1 0.12 | 784 alertas para 168 dias críticos | precisão média 0.069
+   importância (com maré): mes 0.18, chuva_3d_mm 0.11, chuva_7d_mm 0.11, distrito_codigo 0.10, ressaca_max_m 0.09, nivel_total_max_m 0.09
+   VEREDITO SEM EFEITO DA MARÉ: precisão média 0.058 com maré x 0.069 sem (-0.011) | F1 0.09 x 0.12
+   margem de erro (bootstrap por dia, 1000x): diferença entre -0.038 e +0.005 (95%) | a maré ajudou em 8% das repetições, e passou de +0.02 em 0%
 
-Experimento B: maré na hora do pico de chuva (INMET + maré horária)
-   treino 3776 linhas (116 com alagamento) | teste 1960 (8 com alagamento)
-   com maré                     recall 100% | precisão 0% | F1 0.01 | 1506 alertas para 8 dias críticos | precisão média 0.008
-   sem maré                     recall 88% | precisão 0% | F1 0.01 | 1680 alertas para 8 dias críticos | precisão média 0.013
-   importância (com maré): chuva_7d_mm 0.15, distrito_codigo 0.14, chuva_3d_mm 0.14, mes 0.10, mare_hora_pico_m 0.10, chuva_pico_mm 0.09
-   VEREDITO SEM EFEITO DA MARÉ: precisão média 0.008 com maré x 0.013 sem (-0.005) | F1 0.01 x 0.01
+Experimento B: maré na hora do pico de chuva (CEMADEN por distrito + maré horária)
+   treino 5107 linhas (160 com alagamento) | teste 2578 (141 com alagamento)
+   com maré                     recall 28% | precisão 16% | F1 0.21 | 244 alertas para 141 dias críticos | precisão média 0.125
+   sem maré                     recall 12% | precisão 10% | F1 0.11 | 165 alertas para 141 dias críticos | precisão média 0.106
+   importância (com maré): mes 0.15, chuva_7d_mm 0.14, chuva_3d_mm 0.12, distrito_codigo 0.11, chuva_dia_mm 0.10, chuva_pico_mm 0.09
+   VEREDITO SEM EFEITO DA MARÉ: precisão média 0.125 com maré x 0.106 sem (+0.019) | F1 0.21 x 0.11
+   margem de erro (bootstrap por dia, 1000x): diferença entre -0.008 e +0.058 (95%) | a maré ajudou em 92% das repetições, e passou de +0.02 em 50%

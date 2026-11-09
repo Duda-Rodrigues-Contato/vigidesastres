@@ -42,3 +42,11 @@ def test_feriados_do_recife():
     f = feriados_recife(2024)
     assert date(2024, 2, 12) in f and date(2024, 2, 13) in f        # carnaval de 2024
     assert date(2024, 6, 24) in f and date(2024, 7, 16) in f and date(2024, 12, 25) in f
+
+
+
+def test_hora_do_pico_vem_da_estacao_com_a_hora_mais_forte():
+    from datetime import datetime
+    estacao = {("A", D0): (40.0, 8.0, 24, datetime(2019, 6, 10, 15)), ("B", D0): (30.0, 20.0, 24, datetime(2019, 6, 10, 9))}
+    l = {(x["distrito_codigo"], x["data"].date()): x for x in _montar(estacao)}[(3, D0)]
+    assert (l["chuva_dia_mm"], l["chuva_pico_mm"], l["hora_pico_utc"]) == (40.0, 20.0, datetime(2019, 6, 10, 9))

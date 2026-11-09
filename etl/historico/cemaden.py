@@ -56,12 +56,14 @@ def por_dia(texto, codestacao, coletado_em):
         total[dia] += valor
         leituras[dia] += 1
         por_hora[(dia, _hora_fechada(dt))] += valor
-    maior = defaultdict(float)
-    for (dia, _), v in por_hora.items():
-        maior[dia] = max(maior[dia], v)
+    maior, pico = defaultdict(float), {}
+    for (dia, hora), v in sorted(por_hora.items()):
+        if v > maior[dia]:
+            # a hora "fechada" termina às HH:00: a chuva caiu na hora anterior (início, em UTC)
+            maior[dia], pico[dia] = v, (hora - timedelta(hours=1)).replace(tzinfo=None)
     return [{"codestacao": codestacao, "data": datetime(d.year, d.month, d.day), "ano": d.year,
              "chuva_mm": round(total[d], 1), "max_hora_mm": round(maior[d], 1), "leituras": leituras[d],
-             "fonte": FONTE, "coletado_em": coletado_em} for d in sorted(total)]
+             "hora_pico_utc": pico.get(d), "fonte": FONTE, "coletado_em": coletado_em} for d in sorted(total)]
 
 
 def baixar_mes(cliente, codestacao, ini, fim, espera=ESPERA_ERRO_S):
@@ -89,10 +91,12 @@ def janela_do_mes(ano, mes):
     return ini.astimezone(timezone.utc), fim.astimezone(timezone.utc)
 
 
-def carregar(destino, cliente, inicio, fim, so_estacao=None, avisar=print, espera=ESPERA_ERRO_S):
+def carregar(destino, cliente, inicio, fim, so_estacao=None, avisar=print, espera=ESPERA_ERRO_S, refazer=False):
     banco = destino.banco
-    # só o que deu certo conta como feito; mês que falhou é tentado de novo na próxima rodada
-    feitos = {(c["codestacao"], c["mes"]) for c in banco[CONTROLE].find({"fonte": "cemaden", "status": {"$ne": "falha"}})}
+    # só o que deu certo conta como feito; mês que falhou é tentado de novo na próxima rodada.
+    # refazer: baixa de novo (por exemplo, para gravar um campo novo); marca na etiqueta do controle
+    etiqueta = "cemaden_refeito" if refazer else "cemaden"
+    feitos = {(c["codestacao"], c["mes"]) for c in banco[CONTROLE].find({"fonte": etiqueta, "status": {"$ne": "falha"}})}
     estacoes = [e["codestacao"] for e in cliente.estacoes_do_municipio(CODIBGE_RECIFE, UF)]
     if so_estacao:
         estacoes = [e for e in estacoes if e == so_estacao]
@@ -104,7 +108,7 @@ def carregar(destino, cliente, inicio, fim, so_estacao=None, avisar=print, esper
         ini, fim_mes = janela_do_mes(ano, mes)
         agora = datetime.now(timezone.utc)
         texto = baixar_mes(cliente, codestacao, ini, fim_mes, espera)
-        chave = {"fonte": "cemaden", "codestacao": codestacao, "mes": f"{ano}-{mes:02d}"}
+        chave = {"fonte": etiqueta, "codestacao": codestacao, "mes": f"{ano}-{mes:02d}"}
         if texto is None:
             falhas += 1
             banco[CONTROLE].update_one(chave, {"$set": {"status": "falha", "em": agora}}, upsert=True)
@@ -126,9 +130,12 @@ def main():
     p.add_argument("--inicio", default="2014-01")
     p.add_argument("--fim", default="2024-12")
     p.add_argument("--estacao", help="só uma estação (código), para testar")
+    p.add_argument("--refazer", action="store_true",
+                   help="baixa de novo todos os meses (retomável à parte), para gravar campos novos")
     a = p.parse_args()
     try:
-        carregar(obter_destino(), ClienteCemaden(), a.inicio, a.fim, a.estacao, lambda s: print(s, flush=True))
+        carregar(obter_destino(), ClienteCemaden(), a.inicio, a.fim, a.estacao, lambda s: print(s, flush=True),
+                 refazer=a.refazer)
     except KeyboardInterrupt:
         print("\nInterrompido. Rode o mesmo comando para continuar de onde parou.")
 

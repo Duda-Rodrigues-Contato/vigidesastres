@@ -97,14 +97,19 @@ def montar(estacao_dia, distrito_estacao, inmet_dia, mare_dia, alvo_dia, context
       contexto         {distrito: {...variáveis fixas do distrito...}}
     """
     # 1. chuva por distrito e dia: a pior estação válida; senão o INMET
-    pior = {}
-    for (cod, dia), (mm, max_h, leituras) in estacao_dia.items():
+    pior, pico = {}, {}
+    for (cod, dia), valores in estacao_dia.items():
+        mm, max_h, leituras = valores[:3]
+        hora_pico = valores[3] if len(valores) > 3 else None
         distrito = distrito_estacao.get(cod)
         if distrito is None or leituras < MIN_LEITURAS:
             continue
         atual = pior.get((distrito, dia))
         if atual is None or mm > atual[0]:
             pior[(distrito, dia)] = (mm, max_h, cod)
+        # a hora mais forte do distrito: a da estação com a maior chuva numa hora
+        if hora_pico is not None and max_h > 0 and max_h > pico.get((distrito, dia), (0, None))[0]:
+            pico[(distrito, dia)] = (max_h, hora_pico)
 
     feriados = {}
     for ano in range(inicio.year, fim.year + 1):
@@ -132,6 +137,8 @@ def montar(estacao_dia, distrito_estacao, inmet_dia, mare_dia, alvo_dia, context
                 "chuva_dia_mm": chuva.get(d), "chuva_vespera_mm": chuva.get(d - timedelta(1)),
                 "chuva_3d_mm": _soma(chuva, d, 3), "chuva_7d_mm": _soma(chuva, d, 7),
                 "max_hora_mm": max_hora.get(d), "fonte_chuva": origem.get(d),
+                "chuva_pico_mm": pico.get((distrito, d), (None, None))[0],
+                "hora_pico_utc": pico.get((distrito, d), (None, None))[1],
                 "mare_max_m": mare[0], "mare_amplitude_m": mare[1],
                 **contexto.get(distrito, {}),
                 "atendimentos_chuva": alvo, "atendimentos_reativos": reativos,
@@ -159,7 +166,8 @@ def contexto_dos_distritos(banco):
 
 
 def ler_entradas(banco, distrito_estacao):
-    estacao_dia = {(e["codestacao"], e["data"].date()): (e["chuva_mm"], e["max_hora_mm"], e["leituras"])
+    estacao_dia = {(e["codestacao"], e["data"].date()): (e["chuva_mm"], e["max_hora_mm"], e["leituras"],
+                                                          e.get("hora_pico_utc"))
                    for e in banco["silver_chuva_estacao_dia"].find()}
     inmet_dia = {e["data"].date(): (e["chuva_mm"], e["max_hora_mm"], e["horas_com_dado"])
                  for e in banco["silver_chuva_inmet_dia"].find()}

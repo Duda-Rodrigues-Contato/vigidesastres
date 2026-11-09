@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from etl.historico import cemaden as hist
 
 CAB = "OBS.: PCD com horario UTC!\ncod.estacao;nome;municipio;uf;latitude;longitude;datahora;sensor;valor;qualificacao;offset"
@@ -26,6 +28,7 @@ def test_dia_local_total_e_intensidade():
     linhas = {l["data"].day: l for l in hist.por_dia(_csv([("2014-01-01 12:10:00", 2.0), ("2014-01-01 12:50:00", 3.0),
                                                             ("2014-01-02 02:30:00", 4.0)]), "A", None)}
     assert (linhas[1]["chuva_mm"], linhas[1]["max_hora_mm"]) == (9.0, 5.0)   # 02:30 UTC ainda é dia 1 no Recife
+    assert linhas[1]["hora_pico_utc"] == datetime(2014, 1, 1, 12)            # 12:10 e 12:50 caíram entre 12h e 13h
     assert 2 not in linhas
 
 
@@ -77,3 +80,14 @@ def test_leitura_da_meia_noite_nao_sobrescreve_o_mes_anterior(destino):
     hist.carregar(destino, Cliente2(), "2014-01", "2014-02", avisar=lambda s: None, espera=0)
     dias = {d["data"].strftime("%m-%d"): d["chuva_mm"] for d in destino.banco["silver_chuva_estacao_dia"].find()}
     assert dias == {"01-31": 9.0, "02-02": 2.0}
+
+
+def test_refazer_baixa_de_novo_e_tem_controle_proprio(destino):
+    c = Cliente()
+    hist.carregar(destino, c, "2014-01", "2014-01", avisar=lambda s: None, espera=0)
+    c2 = Cliente()
+    hist.carregar(destino, c2, "2014-01", "2014-01", avisar=lambda s: None, espera=0, refazer=True)
+    assert len(c2.pedidos) == 2                                    # baixou de novo
+    c3 = Cliente()
+    hist.carregar(destino, c3, "2014-01", "2014-01", avisar=lambda s: None, espera=0, refazer=True)
+    assert c3.pedidos == []                                        # e a refeita também retoma

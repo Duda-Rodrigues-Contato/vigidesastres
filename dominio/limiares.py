@@ -1,3 +1,5 @@
+# Regra de chuva com maré alta: SINAL FRACO, NÃO CONFIRMADO (decisão 011). Sem efeito na escala
+# diária; na hora do pico de chuva, a maré melhorou o modelo em 92% das repetições, sem confirmar.
 """
 Limiares e gatilhos de alerta do Vigidesastres.
 
