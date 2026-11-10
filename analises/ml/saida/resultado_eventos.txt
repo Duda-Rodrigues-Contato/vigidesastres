@@ -1,0 +1,41 @@
+eventos: ajuste 232 | validação 39 | teste 145 (Recife 36) unidade-dias
+  Logística: precisão média na validação 0.280 | limiar 0.823
+  XGBoost: precisão média na validação 0.294 | limiar 0.002
+  Controle sem chuva e solo: precisão média na validação 0.037 | limiar 0.131
+
+Teste 2024-2026, RECIFE (36 unidade-dias com evento):
+  Gatilhos (só ALTO)           recall 47% | precisão 5% | F1 0.09 | 361 alertas para 36 dias críticos | grandes avisados 0/0
+  Gatilhos (MÉDIO+)            recall 61% | precisão 2% | F1 0.04 | 1102 alertas para 36 dias críticos | grandes avisados 0/0
+  Logística                    recall 39% | precisão 8% | F1 0.14 | 168 alertas para 36 dias críticos | precisão média 0.125 | Brier 0.0506 | grandes avisados 0/0
+  XGBoost                      recall 44% | precisão 4% | F1 0.08 | 385 alertas para 36 dias críticos | precisão média 0.113 | Brier 0.0052 | grandes avisados 0/0
+  Controle sem chuva e solo    recall 53% | precisão 1% | F1 0.02 | 2083 alertas para 36 dias críticos | precisão média 0.015 | Brier 0.0477 | grandes avisados 0/0
+
+Teste 2024-2026, Região (14 unidades) (145 unidade-dias com evento):
+  Gatilhos (só ALTO)           recall 76% | precisão 12% | F1 0.20 | 948 alertas para 145 dias críticos | grandes avisados 0/0
+  Gatilhos (MÉDIO+)            recall 87% | precisão 5% | F1 0.09 | 2532 alertas para 145 dias críticos | grandes avisados 0/0
+  Logística                    recall 70% | precisão 19% | F1 0.30 | 536 alertas para 145 dias críticos | precisão média 0.247 | Brier 0.0621 | grandes avisados 0/0
+  XGBoost                      recall 78% | precisão 11% | F1 0.20 | 990 alertas para 145 dias críticos | precisão média 0.347 | Brier 0.0092 | grandes avisados 0/0
+  Controle sem chuva e solo    recall 78% | precisão 2% | F1 0.05 | 4798 alertas para 145 dias críticos | precisão média 0.055 | Brier 0.0802 | grandes avisados 0/0
+
+Escolhido pela validação: XGBoost
+Chuva e solo, no Recife: precisão média 0.113 x 0.015 do controle (margem de erro +0.014 a +0.226; ajudou em 99% dos sorteios)
+VEREDITO (Recife): precisão média 0.113 (controle 0.015, IC inferior +0.014) | F1 0.08 (melhor gatilho 0.09) -> NÃO APROVADO
+
+Calibração no teste (todas as unidades): probabilidade prevista x frequência observada
+  previsto   0.0% -> aconteceu   0.0% (2898 unidade-dias)
+  previsto   0.0% -> aconteceu   0.0% (2898 unidade-dias)
+  previsto   0.0% -> aconteceu   0.1% (2898 unidade-dias)
+  previsto   0.0% -> aconteceu   0.4% (2898 unidade-dias)
+  previsto   4.6% -> aconteceu   4.5% (2898 unidade-dias)
+
+Estabilidade (Recife; treino só com os anos anteriores, XGBoost com os mesmos parâmetros):
+  2020:   6 eventos | precisão média 0.300 com chuva e solo x 0.020 sem
+  2021:  18 eventos | precisão média 0.162 com chuva e solo x 0.011 sem
+  2022:  21 eventos | precisão média 0.102 com chuva e solo x 0.013 sem
+  2023:  13 eventos | precisão média 0.074 com chuva e solo x 0.040 sem
+  2024:   6 eventos | precisão média 0.034 com chuva e solo x 0.005 sem
+  2025:  12 eventos | precisão média 0.124 com chuva e solo x 0.024 sem
+  2026:  18 eventos | precisão média 0.134 com chuva e solo x 0.019 sem
+
+Importância (XGBoost): chuva_3d_mm 0.50, chuva_dia_mm 0.10, chuva_7d_mm 0.05, chuva_pico_mm 0.05, mes 0.04, solo_28_100cm_vespera 0.03, acumulado_72h_antes 0.03, unidade_codigo 0.03
+Modelo salvo em C:\Users\mathe\Desktop\vigidesastres\modelos\eventos.joblib

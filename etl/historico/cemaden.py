@@ -11,7 +11,8 @@ de 3 milhões de documentos (acima do plano gratuito do Atlas). O modelo usa
 chuva por dia (24 h, 72 h, 7 dias) e a maior chuva numa hora do dia (intensidade).
 
 Uso:
-    python -m etl.historico.cemaden                      # 2014-01 a 2024-12, todas as estações
+    python -m etl.historico.cemaden                      # 2014-01 a 2024-12, estações do Recife
+    python -m etl.historico.cemaden --municipios rmr --inicio 2016-01 --fim 2026-10   # os 6 vizinhos
     python -m etl.historico.cemaden --inicio 2020-01 --fim 2020-12
 """
 
@@ -91,13 +92,14 @@ def janela_do_mes(ano, mes):
     return ini.astimezone(timezone.utc), fim.astimezone(timezone.utc)
 
 
-def carregar(destino, cliente, inicio, fim, so_estacao=None, avisar=print, espera=ESPERA_ERRO_S, refazer=False):
+def carregar(destino, cliente, inicio, fim, so_estacao=None, avisar=print, espera=ESPERA_ERRO_S, refazer=False,
+             municipios=(CODIBGE_RECIFE,)):
     banco = destino.banco
     # só o que deu certo conta como feito; mês que falhou é tentado de novo na próxima rodada.
     # refazer: baixa de novo (por exemplo, para gravar um campo novo); marca na etiqueta do controle
     etiqueta = "cemaden_refeito" if refazer else "cemaden"
     feitos = {(c["codestacao"], c["mes"]) for c in banco[CONTROLE].find({"fonte": etiqueta, "status": {"$ne": "falha"}})}
-    estacoes = [e["codestacao"] for e in cliente.estacoes_do_municipio(CODIBGE_RECIFE, UF)]
+    estacoes = [e["codestacao"] for m in municipios for e in cliente.estacoes_do_municipio(m, UF)]
     if so_estacao:
         estacoes = [e for e in estacoes if e == so_estacao]
     pendentes = [(e, a, m) for e in estacoes for a, m in meses(inicio, fim) if (e, f"{a}-{m:02d}") not in feitos]
@@ -130,12 +132,16 @@ def main():
     p.add_argument("--inicio", default="2014-01")
     p.add_argument("--fim", default="2024-12")
     p.add_argument("--estacao", help="só uma estação (código), para testar")
+    p.add_argument("--municipios", default=CODIBGE_RECIFE,
+                   help="códigos IBGE separados por vírgula; 'rmr' = os 6 vizinhos do modelo de eventos")
     p.add_argument("--refazer", action="store_true",
                    help="baixa de novo todos os meses (retomável à parte), para gravar campos novos")
     a = p.parse_args()
     try:
+        from dominio.rmr import VIZINHOS
+        municipios = list(VIZINHOS) if a.municipios == "rmr" else a.municipios.split(",")
         carregar(obter_destino(), ClienteCemaden(), a.inicio, a.fim, a.estacao, lambda s: print(s, flush=True),
-                 refazer=a.refazer)
+                 refazer=a.refazer, municipios=municipios)
     except KeyboardInterrupt:
         print("\nInterrompido. Rode o mesmo comando para continuar de onde parou.")
 
