@@ -749,4 +749,3 @@ document.getElementById('camada-perfil').addEventListener('change', e => {
   atualizarPainelRisco();
   redesenharDistritos();
 });
-

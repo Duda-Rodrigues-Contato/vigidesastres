@@ -1,25 +1,77 @@
 {% load static %}
-<aside class="flex h-full w-64 flex-col bg-brand-navy text-slate-100">
-  <a href="{% url 'dashboard' %}" class="flex h-20 items-center gap-3 border-b border-white/10 px-6">
-    <div class="grid size-10 shrink-0 place-items-center rounded-lg bg-white p-1">
-  <img src="{% static 'core/logo-transparente.png' %}" alt="Vigidesastre" class="h-full w-full object-contain">
-</div>
-    <div class="min-w-0">
-      <div class="truncate text-lg font-bold tracking-tight">Vigidesastre</div>
-      <div class="text-xs font-medium text-brand-teal">SMS · Recife</div>
-    </div>
-  </a>
+<style>
+  /* Comportamento padrão dos textos */
+  .sidebar-text {
+    transition: opacity 0.2s, width 0.2s;
+    white-space: nowrap;
+  }
+  
+  /* =========================================
+     ESTILOS APENAS PARA A BARRA FECHADA
+     ========================================= */
+  
+  html.sidebar-closed #app-sidebar .sidebar-text {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+  }
 
+  html.sidebar-closed #app-sidebar .header-content {
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+  
+  html.sidebar-closed #app-sidebar .logo-link {
+    display: none !important;
+  }
+
+  html.sidebar-closed #app-sidebar nav a {
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    gap: 0 !important;
+  }
+
+  html.sidebar-closed #app-sidebar .footer-content {
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    gap: 0 !important;
+  }
+</style>
+
+<aside id="app-sidebar" class="flex h-full w-64 flex-col bg-brand-navy text-slate-100 transition-all duration-300 overflow-hidden">
+  
+  <!-- Cabeçalho -->
+  <div class="header-content flex h-20 items-center justify-between border-b border-white/10 px-4 transition-all">
+    <a href="{% url 'dashboard' %}" class="logo-link flex items-center gap-3">
+      <div class="grid size-10 shrink-0 place-items-center rounded-lg bg-white p-1">
+        <img src="{% static 'core/logo-transparente.png' %}" alt="Logo" class="h-full w-full object-contain">
+      </div>
+      <div class="min-w-0 sidebar-text">
+        <div class="truncate text-lg font-bold tracking-tight">Sentinela</div>
+        <div class="text-xs font-medium text-brand-teal">SMS · Recife</div>
+      </div>
+    </a>
+
+    <!-- Botão Menu -->
+    <button onclick="toggleSidebar()" class="shrink-0 rounded-md p-1.5 text-slate-300 hover:bg-white/10 hover:text-white transition-colors">
+      <i data-lucide="menu" class="h-5 w-5"></i>
+    </button>
+  </div>
+
+  <!-- Links do Menu -->
   <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-6" aria-label="Navegação principal">
     {% include 'components/nav-links.html' %}
   </nav>
 
+  <!-- Rodapé do Utilizador -->
   <div class="border-t border-white/10 p-4">
-    <div class="flex items-center gap-3">
-      <div class="grid size-9 place-items-center rounded-full bg-brand-teal text-xs font-bold text-white">VE</div>
-      <div>
-        <div class="text-xs font-semibold">Vigilância em Saúde</div>
-        <div class="text-[11px] text-slate-400">Operação integrada</div>
+    <div class="footer-content flex items-center gap-3 transition-all">
+      <div class="grid size-9 shrink-0 place-items-center rounded-full bg-brand-teal text-xs font-bold text-white">VE</div>
+      <div class="sidebar-text min-w-0">
+        <div class="text-xs font-semibold truncate">Vigilância em Saúde</div>
+        <div class="text-[11px] text-slate-400 truncate">Operação integrada</div>
       </div>
     </div>
   </div>

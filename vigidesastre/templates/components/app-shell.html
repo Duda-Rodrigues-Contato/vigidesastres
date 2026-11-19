@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Vigidesastre{% endblock %} — SMS Recife</title>
+  <title>{% block title %}Sentilena{% endblock %} — SMS Recife</title>
   <link rel="icon" href="{% static 'core/logo-transparente.png' %}">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    // Identidade visual do projeto (paleta do Canva). Use: bg-brand-navy, text-brand-teal, etc.
     tailwind.config = {
       theme: { extend: {
         colors: { brand: {
@@ -24,9 +23,24 @@
   </script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- LÓGICA DE MEMÓRIA DA BARRA (Evita o pulo ao carregar) -->
+  <script>
+    if (localStorage.getItem('sidebarState') === 'closed') {
+      document.documentElement.classList.add('sidebar-closed');
+    }
+  </script>
+  <style>
+    /* Aplica larguras menores apenas no Desktop (lg) quando fechado */
+    @media (min-width: 1024px) {
+      html.sidebar-closed #app-sidebar { width: 5rem !important; }
+      html.sidebar-closed #main-content { padding-left: 5rem !important; }
+    }
+  </style>
+
   {% block head_extra %}{% endblock %}
 </head>
-<body class="min-h-screen bg-slate-50 font-sans text-slate-900">
+<body class="min-h-screen bg-slate-50 font-sans text-slate-900 select-none">
 
   <!-- Sidebar desktop -->
   <div class="fixed inset-y-0 left-0 z-30 hidden lg:block">
@@ -44,13 +58,13 @@
     </div>
   </div>
 
-  <!-- Conteúdo -->
-  <div class="lg:pl-64">
+  <!-- Conteúdo principal -->
+  <div id="main-content" class="lg:pl-64 transition-all duration-300">
     <div class="sticky top-0 z-20 grid h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur md:px-8 lg:hidden">
       <button class="p-2 text-brand-navy" onclick="toggleMobileMenu()" aria-label="Abrir menu">
         <i data-lucide="menu" class="h-5 w-5"></i>
       </button>
-      <span class="truncate font-bold text-brand-navy">{% block page_title %}Vigidesastre{% endblock %}</span>
+      <span class="truncate font-bold text-brand-navy">{% block page_title %}Sentilena{% endblock %}</span>
       <div class="flex size-9 items-center justify-center rounded-full bg-brand-teal text-xs font-bold text-white">VE</div>
     </div>
 
@@ -59,7 +73,19 @@
     </main>
   </div>
 
+  <!-- SCRIPTS GERAIS -->
   <script>
+    function toggleSidebar() {
+      const html = document.documentElement;
+      html.classList.toggle('sidebar-closed');
+      
+      if (html.classList.contains('sidebar-closed')) {
+        localStorage.setItem('sidebarState', 'closed');
+      } else {
+        localStorage.setItem('sidebarState', 'open');
+      }
+    }
+
     function toggleMobileMenu() {
       document.getElementById('mobile-sidebar').classList.toggle('hidden');
     }

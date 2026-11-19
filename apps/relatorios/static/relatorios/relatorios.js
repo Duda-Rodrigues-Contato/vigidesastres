@@ -1,74 +1,97 @@
-// Tela: relatorios/relatorios.html
-// Dados do servidor chegam pelo json_script do template (o Django escapa o conteúdo).
+// ============================================================================
+// MÓDULO DE RELATÓRIOS: Utilitários de Data
+// ============================================================================
 
+/**
+ * Retorna a data de hoje no formato "AAAA-MM-DD" (Local, não UTC).
+ */
 function getToday() {
-  // Monta "aaaa-mm-dd" com a data LOCAL (não UTC)
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0'); // Mês começa em 0
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, '0'); // Mês começa em 0
+  const dia = String(hoje.getDate()).padStart(2, '0');
+
+  return `${ano}-${mes}-${dia}`;
 }
 
-
+/**
+ * Converte uma data "AAAA-MM-DD" para o formato brasileiro "DD/MM/AAAA".
+ * (Separar a string evita o bug clássico de fuso horário do JS).
+ */
 function formatDate(isoDate) {
-  // "2026-08-20" -> "20/08/2026"
-  // Não usa new Date() para evitar bug de fuso horário (data aparecer 1 dia antes)
-  const [year, month, day] = isoDate.split('-');
-  return `${day}/${month}/${year}`;
+  const [ano, mes, dia] = isoDate.split('-');
+  return `${dia}/${mes}/${ano}`;
 }
 
 
+// ============================================================================
+// MÓDULO DE RELATÓRIOS: Geração e Pré-visualização
+// ============================================================================
+
+/**
+ * Manipula a submissão do formulário: valida datas e monta a interface.
+ */
 function generateReport(e) {
   e.preventDefault();
 
-  const start = document.getElementById('report-start').value;
-  const end = document.getElementById('report-end').value;
-  const district = document.getElementById('report-district').value;
+  // 1. Captura os valores dos campos
+  const inputStart = document.getElementById('report-start').value;
+  const inputEnd = document.getElementById('report-end').value;
+  const inputDistrict = document.getElementById('report-district').value;
 
-  // ValidaçÕes
-  if (!start || !end) {
-    alert('Preenhca a data inicial e a data final.');
-    return;
+  // 2. Validações de preenchimento e coerência
+  if (!inputStart || !inputEnd) {
+    return alert('Preencha a data inicial e a data final.');
   }
 
-  if (start > end) {
-    alert('A data inicial não pode ser maior que a data final.');
-    return;
+  if (inputStart > inputEnd) {
+    return alert('A data inicial não pode ser maior que a data final.');
   }
 
-  if (start > getToday() || end > getToday()) {
-    alert('As datas não podem ser posteriores à data de hoje.');
-    return;
+  const hoje = getToday();
+  if (inputStart > hoje || inputEnd > hoje) {
+    return alert('As datas não podem ser posteriores à data de hoje.');
   }
 
-  document.getElementById('preview-subtitle').innerText = `${formatDate(start)} a ${formatDate(end)} · ${district}`;
+  // 3. Atualiza o subtítulo com o período e local
+  const subtitulo = document.getElementById('preview-subtitle');
+  subtitulo.innerText = `${formatDate(inputStart)} a ${formatDate(inputEnd)} · ${inputDistrict}`;
 
-  const checkboxes = document.querySelectorAll('.report-option:checked');
-  const listContainer = document.getElementById('selected-list');
-  listContainer.innerHTML = '';
+  // 4. Monta a lista de opções selecionadas de forma limpa (sem múltiplos appendChild)
+  const opcoesSelecionadas = Array.from(document.querySelectorAll('.report-option:checked'));
+  const containerLista = document.getElementById('selected-list');
+  
+  containerLista.innerHTML = opcoesSelecionadas.map(opcao => `
+    <li class="flex items-center gap-2 text-slate-700">
+      <i data-lucide="check-circle-2" class="w-4 h-4 text-green-600"></i> 
+      ${opcao.value}
+    </li>
+  `).join('');
 
-  checkboxes.forEach(cb => {
-    const li = document.createElement('li');
-    li.className = 'flex items-center gap-2 text-slate-700';
-    li.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4 text-green-600"></i> ${cb.value}`;
-    listContainer.appendChild(li);
-  });
-
+  // 5. Alterna a visibilidade dos blocos (Esconde o aviso vazio -> Mostra preview)
   document.getElementById('empty-preview').classList.add('hidden');
   document.getElementById('generated-preview').classList.remove('hidden');
 
+  // 6. Recarrega os ícones dinâmicos injetados no HTML
   lucide.createIcons();
 }
+
+
+// ============================================================================
+// INICIALIZAÇÃO: Travas e Limites do Calendário
+// ============================================================================
 
 const startInput = document.getElementById('report-start');
 const endInput = document.getElementById('report-end');
 const today = getToday();
 
-startInput.max = today;
-endInput.max = today;
+if (startInput && endInput) {
+  // Impede a seleção de datas no futuro
+  startInput.max = today;
+  endInput.max = today;
 
-// Opcional: a data final nunca pode ser anterior à inicial
-startInput.addEventListener('change', () => {
-  endInput.min = startInput.value;
-});
+  // Ao alterar a data inicial, a data final nunca pode ser anterior a ela
+  startInput.addEventListener('change', () => {
+    endInput.min = startInput.value;
+  });
+}
