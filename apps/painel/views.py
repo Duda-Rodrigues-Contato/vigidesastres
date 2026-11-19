@@ -119,8 +119,9 @@ def _tom(indice):
 def calendario(request):
     """Calendário de risco: em que meses cada distrito mais precisa de equipe."""
     from apps.fontes.repositorios import calendario as repo_calendario
-    linhas, erro = [], False
+    linhas, erro, demanda = [], False, None
     try:
+        demanda = _demanda_da_semana()
         meses, resumos = repo_calendario.por_mes(), {r["distrito_codigo"]: r for r in repo_calendario.por_distrito()}
         por_distrito = {}
         for m in meses:
@@ -134,7 +135,27 @@ def calendario(request):
     except PyMongoError:
         logger.exception("Falha ao ler o calendário de risco")
         erro = True
-    return render(request, "painel/calendario.html", {"linhas": linhas, "meses": MESES_CURTOS, "erro": erro})
+    return render(request, "painel/calendario.html",
+                  {"linhas": linhas, "meses": MESES_CURTOS, "erro": erro, "demanda": demanda})
+
+
+def _demanda_da_semana():
+    """Previsão de atendimentos da semana por distrito (ml.demanda), pronta para a tela."""
+    from datetime import date
+    from apps.fontes.repositorios import demanda as repo_demanda
+    docs = repo_demanda.previsao()
+    if not docs:
+        return None
+    for d in docs:
+        v = d.get("variacao")
+        d["tom"] = ("muito_alto" if v is not None and v >= 0.5 else "alto" if v is not None and v >= 0.2
+                    else "abaixo" if v is not None and v <= -0.2 else "normal")
+        d["variacao_pct"] = None if v is None else round(100 * v)
+    primeiro = docs[0]
+    data = lambda iso: date.fromisoformat(iso[:10]).strftime("%d/%m/%Y") if iso else "?"
+    return {"distritos": docs, "inicio": data(primeiro["inicio_semana"]), "fim": data(primeiro["fim_semana"]),
+            "completa": all(d.get("completa") for d in docs), "dados_ate": data(primeiro.get("dados_ate")),
+            "demonstracao": primeiro.get("demonstracao", False)}
 
 
 def calendario_csv(request):

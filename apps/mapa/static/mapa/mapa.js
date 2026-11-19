@@ -68,7 +68,7 @@ function desligar(id) {
 
 // com uma camada tematica por cima, os distritos viram so contorno
 function distritosEmContorno() {
-  return chuvaLigada() || riscoLigado() || arboLigado() || comLigado() || vulLigado();
+  return chuvaLigada() || riscoLigado() || arboLigado() || comLigado() || vulLigado() || perfilLigado();
 }
 
 // o painel "Nivel de risco" descreve a cor dos distritos, que some
@@ -383,7 +383,7 @@ document.getElementById('camada-risco')
     if (e.target.checked) {
       desligar('camada-arbo');
       desligar('camada-com');
-      desligar('camada-vul');
+      desligar('camada-vul'); desligar('camada-perfil');
       camadaRisco.addTo(map);
       // por cima dos distritos, para o clique abrir o detalhe do bairro...
       camadaRisco.eachLayer(l => l.bringToFront && l.bringToFront());
@@ -501,7 +501,7 @@ document.getElementById('camada-arbo')
     if (e.target.checked) {
       desligar('camada-risco');
       desligar('camada-com');
-      desligar('camada-vul');
+      desligar('camada-vul'); desligar('camada-perfil');
       camadaArbo.addTo(map);
       carregarArbo();
     } else {
@@ -640,7 +640,7 @@ function carregarCom() {
 }
 
 document.getElementById('camada-com').addEventListener('change', e => {
-  if (e.target.checked) { desligar('camada-risco'); desligar('camada-arbo'); desligar('camada-vul'); camadaCom.addTo(map); carregarCom(); }
+  if (e.target.checked) { desligar('camada-risco'); desligar('camada-arbo'); desligar('camada-vul'); desligar('camada-perfil'); camadaCom.addTo(map); carregarCom(); }
   else map.removeLayer(camadaCom);
   document.getElementById('controles-com').classList.toggle('hidden', !e.target.checked);
   atualizarPainelRisco();
@@ -712,11 +712,41 @@ function carregarVul() {
 }
 
 document.getElementById('camada-vul').addEventListener('change', e => {
-  if (e.target.checked) { desligar('camada-risco'); desligar('camada-arbo'); desligar('camada-com'); camadaVul.addTo(map); carregarVul(); }
+  if (e.target.checked) { desligar('camada-risco'); desligar('camada-arbo'); desligar('camada-com'); desligar('camada-perfil'); camadaVul.addTo(map); carregarVul(); }
   else map.removeLayer(camadaVul);
   document.getElementById('controles-vul').classList.toggle('hidden', !e.target.checked);
   atualizarPainelRisco();
   redesenharDistritos();
 });
 document.getElementById('vul-indice').addEventListener('change', carregarVul);
+
+// ─── Camada: perfis de risco dos bairros (agrupamento K-means) ───────
+const camadaPerfil = L.layerGroup();
+const CORES_PERFIL = ['#b45309', '#0369a1', '#7c3aed', '#be123c', '#15803d', '#64748b'];
+
+function perfilLigado() { return document.getElementById('camada-perfil').checked; }
+
+function carregarPerfil() {
+  fetch('/api/perfis/').then(r => r.json()).then(dados => {
+    const nomes = [...new Set(dados.features.map(f => f.properties.perfil))].sort();
+    const cor = nome => nome.startsWith('baixo risco') ? '#cbd5e1' : CORES_PERFIL[nomes.indexOf(nome) % CORES_PERFIL.length];
+    document.getElementById('legenda-perfil').innerHTML = nomes.map(n =>
+      '<div class="flex items-center gap-2"><i class="inline-block size-3 rounded-sm" style="background:' + cor(n) + '"></i> ' + n +
+      ' (' + dados.features.filter(f => f.properties.perfil === n).length + ')</div>').join('') +
+      '<p class="text-slate-400">Bairros agrupados pelo tipo de risco: atendimentos, eventos e cadastros.</p>';
+    camadaPerfil.clearLayers();
+    L.geoJSON(dados, {
+      style: f => ({ fillColor: cor(f.properties.perfil), color: '#334155', weight: 0.6, fillOpacity: 0.7 }),
+      onEachFeature: (f, layer) => layer.bindTooltip('<strong>' + f.properties.nome + '</strong><br>' + f.properties.perfil, { sticky: true })
+    }).addTo(camadaPerfil);
+  }).catch(err => console.error('Erro ao carregar os perfis:', err));
+}
+
+document.getElementById('camada-perfil').addEventListener('change', e => {
+  if (e.target.checked) { desligar('camada-risco'); desligar('camada-arbo'); desligar('camada-com'); desligar('camada-vul'); camadaPerfil.addTo(map); carregarPerfil(); }
+  else map.removeLayer(camadaPerfil);
+  document.getElementById('legenda-perfil').classList.toggle('hidden', !e.target.checked);
+  atualizarPainelRisco();
+  redesenharDistritos();
+});
 

@@ -58,3 +58,8 @@ def vulnerabilidade():
     """Índice de vulnerabilidade por bairro (gold, etl/derivados/vulnerabilidade.py)."""
     return list(conexao.banco()["gold_vulnerabilidade_bairro"].find({}, {"_id": 0, "coletado_em": 0}))
 
+
+def perfis():
+    """Perfil de risco de cada bairro (gold, ml/perfis.py)."""
+    return list(conexao.banco()["gold_perfil_bairro"].find({}, {"_id": 0, "chave": 1, "perfil": 1, "grupo": 1}))
+

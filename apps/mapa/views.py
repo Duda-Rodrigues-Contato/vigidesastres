@@ -246,3 +246,11 @@ def get_vulnerabilidade_geojson(request):
     return JsonResponse({"type": "FeatureCollection", "features": features,
                          "fonte": "Comunidades (2014), Plano de Contingência 2024, Defesa Civil 2015-2024, IBGE 2022"})
 
+
+def get_perfis_geojson(request):
+    """Bairros com o perfil de risco (agrupamento K-means)."""
+    perfis = {p["chave"]: p for p in repo_referencia.perfis()}
+    features = [{"type": "Feature", "geometry": b["geometria"], "properties": {**perfis[b["chave"]], "nome": b["nome"]}}
+                for b in repo_referencia.bairros() if b["chave"] in perfis]
+    return JsonResponse({"type": "FeatureCollection", "features": features})
+

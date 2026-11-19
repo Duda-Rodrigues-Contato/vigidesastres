@@ -11,4 +11,5 @@ git pull || echo "aviso: git pull falhou, seguindo com o código local"
 python -m etl mare cemaden previsao avisos_inmet infodengue || echo "aviso: alguma coleta falhou (veja a tabela etl_execucoes)"
 python manage.py migrate --noinput
 python manage.py gerar_alertas || echo "aviso: não foi possível gerar os alertas de hoje"
+python -m ml.demanda --prever     # previsão da semana na tela do Calendário
 python manage.py runserver

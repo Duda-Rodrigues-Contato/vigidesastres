@@ -1,0 +1,5 @@
+semanas: treino 411 | teste 152 | previsão 4 semanas à frente
+Erro médio (log dos casos): com clima 0.397 | sem clima 0.399 (+0%)
+  (0,10 no log ~ 10% de erro nos casos)
+Importância (com clima): log_casos 0.57, log_casos_1 0.15, umidade_8s 0.05, semana_cos 0.05, temp_4s 0.04, semana_sen 0.04, temp_8s 0.03, chuva_8s 0.03
+VEREDITO: O CLIMA NÃO AJUDA (precisa de pelo menos 5% menos erro)

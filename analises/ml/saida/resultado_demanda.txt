@@ -1,0 +1,23 @@
+treino 2920 distrito-semanas (2015-2021) | teste 1248 (2022-2024)
+versão                                  valid. |    MAE   WAPE     R²  vs régua
+0 original (chuva da própria semana)      24.2 |   22.4    49%   0.68      +11%
+1 corrigida                               25.3 |   23.7    52%   0.58       +6%
+2 + demanda anterior                      18.9 |   17.9    39%   0.71      +29%
+3 + chuva detalhada                       18.7 |   18.0    39%   0.71      +29%
+4 + chuva e outros separados              19.1 |   17.3    38%   0.74      +31%
+régua (o normal)                               |   25.1    55%   0.53
+ingênuo (igual à semana passada)               |   19.5    42%   0.67
+(valid. = erro na validação cruzada do treino, usado para escolher; MAE/WAPE/R² = teste)
+
+Escolhida pela validação: 3 + chuva detalhada
+Por distrito (teste):
+  DS 1: real   20.4/semana | erro modelo  15.9 | erro régua  24.4
+  DS 2: real   89.5/semana | erro modelo  27.2 | erro régua  34.0
+  DS 3: real   10.4/semana | erro modelo   8.0 | erro régua   8.0
+  DS 4: real   23.0/semana | erro modelo  13.3 | erro régua  16.7
+  DS 5: real   25.5/semana | erro modelo  13.0 | erro régua  15.7
+  DS 6: real    4.5/semana | erro modelo   5.2 | erro régua   4.6
+  DS 7: real   99.1/semana | erro modelo  33.0 | erro régua  60.5
+  DS 8: real   94.5/semana | erro modelo  28.1 | erro régua  37.0
+Importância (atendimentos): atend_ant_1 0.76, atend_media_4 0.08, semana 0.03, dias_chuva_forte_ant 0.03, distrito_codigo 0.02, mes 0.02
+VEREDITO: APROVADO (precisa errar pelo menos 10% menos que a régua)
