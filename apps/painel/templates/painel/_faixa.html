@@ -1,3 +1,209 @@
+{% extends 'components/app-shell.html' %}
+{% load static %}
+
+{% block title %}Mapa de Monitoramento{% endblock %}
+{% block page_title %}Mapa{% endblock %}
+
+{% block head_extra %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+{% endblock %}
+
+{% block content %}
+          <header class="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 border-b border-slate-200 pb-5">
+            <div class="min-w-0">
+              <h1 class="truncate text-2xl font-bold text-brand-navy md:text-3xl">Mapa de Monitoramento</h1>
+              <p class="mt-1 text-sm text-slate-500">Distritos sanitários do Recife · atualização em tempo real</p>
+            </div>
+          </header>
+
+          <div class="grid min-h-[690px] gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+
+            <!-- Mapa Leaflet -->
+            <section
+              class="relative min-h-[570px] overflow-hidden rounded-lg border border-slate-200 bg-slate-100 shadow-sm"
+              aria-label="Mapa dos distritos sanitários do Recife">
+
+              <div id="map" class="absolute inset-0 z-0"></div>
+
+              <div
+                class="pointer-events-none absolute left-5 top-5 z-10 rounded-md border border-slate-200 bg-white/95 px-3 py-2 text-xs font-semibold shadow-sm flex items-center gap-2">
+                <i data-lucide="map-pinned" class="text-brand-teal w-4 h-4"></i> Recife · PE
+              </div>
+
+              <!-- Card Flutuante de Detalhes -->
+              <div id="district-detail-card"
+                class="hidden absolute inset-x-3 bottom-3 z-20 rounded-lg border border-slate-200 bg-white p-4 shadow-md md:inset-x-auto md:bottom-5 md:left-5 md:w-80">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <p class="text-xs text-slate-500">Distrito selecionado</p>
+                    <h2 id="selected-district-name" class="text-xl font-bold text-slate-900">DS VI</h2>
+                  </div>
+                  <button onclick="closeDistrictDetail()" class="p-1 text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                  </button>
+                </div>
+                <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+                  <div class="rounded bg-slate-100 p-2">
+                    <i data-lucide="cloud-rain" class="mx-auto text-brand-teal w-4 h-4"></i>
+                    <strong id="district-rain" class="mt-1 block text-sm">--</strong>
+                    <small id="district-rain-label" class="text-[10px] text-slate-500">Chuva 24h</small>
+                  </div>
+                  <div class="rounded bg-slate-100 p-2">
+                    <i data-lucide="cloud-sun-rain" class="mx-auto text-brand-teal w-4 h-4"></i>
+                    <strong id="district-cases" class="mt-1 block text-sm">--</strong>
+                    <small class="text-[10px] text-slate-500">Previsão 24h</small>
+                  </div>
+                  <div class="rounded bg-slate-100 p-2">
+                    <i data-lucide="building-2" class="mx-auto text-brand-teal w-4 h-4"></i>
+                    <strong id="district-alerts" class="mt-1 block text-sm">--</strong>
+                    <small class="text-[10px] text-slate-500">Alertas abertos</small>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Painel Lateral -->
+            <aside class="space-y-5">
+              <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 class="flex items-center gap-2 font-bold text-slate-900">
+                  <i data-lucide="layers-3" class="text-brand-teal w-5 h-5"></i> Camadas do mapa
+                </h2>
+                <div class="mt-4 space-y-3">
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Clima</p>
+                  <label class="flex cursor-pointer items-center gap-3 text-sm">
+                    <input type="checkbox" id="camada-chuva" class="size-4 accent-brand-teal"> Chuva medida
+                    <span class="text-xs text-slate-400">(CEMADEN)</span>
+                  </label>
+                  <p class="pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Risco</p>
+                  <label class="flex cursor-pointer items-center gap-3 text-sm">
+                    <input type="checkbox" id="camada-risco" class="size-4 accent-brand-teal"> Áreas de risco
+                    <span class="text-xs text-slate-400">(Defesa Civil)</span>
+                  </label>
+                  <div id="legenda-risco" class="hidden -mt-1 ml-7 space-y-1 text-[11px] text-slate-600">
+                    <div class="flex items-center gap-2"><i class="inline-block size-3 rounded-sm" style="background:#0891b2"></i> alagamento</div>
+                    <div class="flex items-center gap-2"><i class="inline-block size-3 rounded-sm" style="background:#b45309"></i> deslizamento</div>
+                    <div class="flex items-center gap-2"><i class="inline-block size-3 rounded-sm" style="background:#be123c"></i> os dois</div>
+                    <p class="text-slate-400">Bairros que contêm áreas de risco alto ou muito alto</p>
+                  </div>
+                  <label class="flex cursor-pointer items-center gap-3 text-sm">
+                    <input type="checkbox" id="camada-com" class="size-4 accent-brand-teal"> Comunidades
+                    <span class="text-xs text-slate-400">(2014)</span>
+                  </label>
+                  <div id="controles-com" class="hidden -mt-1 ml-7 space-y-2 text-[11px] text-slate-600">
+                    <select id="com-indicador" class="rounded border border-slate-300 px-1.5 py-1 text-xs" aria-label="Indicador">
+                      <option value="alagamento">Alagamento</option>
+                      <option value="deslizamento">Deslizamento</option>
+                      <option value="indice">Precariedade (índice)</option>
+                    </select>
+                    <div id="legenda-com" class="space-y-1"></div>
+                    <p class="text-slate-400">Comunidades de Interesse Social, levantamento de 2014. Nota 0 a 10, maior = pior.</p>
+                  </div>
+                  <label class="flex cursor-pointer items-center gap-3 text-sm">
+                    <input type="checkbox" id="camada-vul" class="size-4 accent-brand-teal"> Vulnerabilidade
+                    <span class="text-xs text-slate-400">(índice por bairro)</span>
+                  </label>
+                  <div id="controles-vul" class="hidden -mt-1 ml-7 space-y-2 text-[11px] text-slate-600">
+                    <select id="vul-indice" class="rounded border border-slate-300 px-1.5 py-1 text-xs" aria-label="Índice">
+                      <option value="indice">Geral</option>
+                      <option value="indice_estrutural">Estrutural (cadastros)</option>
+                      <option value="indice_historico">Histórico (atendimentos em chuva forte)</option>
+                    </select>
+                    <div id="legenda-vul" class="space-y-1"></div>
+                    <p class="text-slate-400">0 = menos vulnerável, 1 = mais, comparando os 94 bairros entre si.</p>
+                  </div>
+                  <p class="pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Saúde</p>
+                  <label class="flex cursor-pointer items-center gap-3 text-sm">
+                    <input type="checkbox" id="camada-arbo" class="size-4 accent-brand-teal"> Arboviroses por bairro
+                    <span class="text-xs text-slate-400">(histórico)</span>
+                  </label>
+                  <div id="controles-arbo" class="hidden -mt-1 ml-7 space-y-2 text-[11px] text-slate-600">
+                    <div class="flex gap-2">
+                      <select id="arbo-ano" class="rounded border border-slate-300 px-1.5 py-1 text-xs" aria-label="Ano"></select>
+                      <select id="arbo-doenca" class="rounded border border-slate-300 px-1.5 py-1 text-xs" aria-label="Doença">
+                        <option value="todas">Todas</option>
+                        <option value="dengue">Dengue</option>
+                        <option value="chikungunya">Chikungunya</option>
+                        <option value="zika">Zika</option>
+                      </select>
+                    </div>
+                    <div id="legenda-arbo" class="space-y-1"></div>
+                    <p class="text-slate-400">Casos prováveis por 10 mil habitantes, por bairro de residência</p>
+                  </div>
+                  <label class="flex cursor-pointer items-center gap-3 text-sm">
+                    <input type="checkbox" checked id="camada-unidades" class="size-4 accent-brand-teal"> Unidades de saúde
+                    <span id="contador-unidades" class="text-xs text-slate-400"></span>
+                  </label>
+                  <p class="pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Rede de apoio</p>
+                  <label class="flex cursor-pointer items-center gap-3 text-sm">
+                    <input type="checkbox" checked id="camada-abrigo" class="size-4 accent-brand-teal"> <i class="grid size-4 place-items-center rounded-[3px] border border-white bg-green-700 text-[9px] font-bold not-italic text-white shadow">A</i> Abrigos
+                    <span id="contador-abrigo" class="text-xs text-slate-400"></span>
+                  </label>
+                  <label class="flex cursor-pointer items-center gap-3 text-sm">
+                    <input type="checkbox" id="camada-escola" class="size-4 accent-brand-teal"> <i class="inline-block size-2.5 rounded-full border border-white bg-blue-800 shadow"></i> Escolas municipais
+                    <span id="contador-escola" class="text-xs text-slate-400"></span>
+                  </label>
+                  <label class="flex cursor-pointer items-center gap-3 text-sm">
+                    <input type="checkbox" id="camada-cras" class="size-4 accent-brand-teal"> <i class="inline-block size-2.5 rotate-45 border border-white bg-orange-600 shadow"></i> CRAS
+                    <span id="contador-cras" class="text-xs text-slate-400"></span>
+                  </label>
+                  <p class="-mt-1 ml-7 text-[11px] text-slate-400">O cadastro de abrigos não indica se estão abertos nem a capacidade.</p>
+                </div>
+              </div>
+
+              <div id="painel-risco" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition-opacity">
+                <h2 class="font-bold text-slate-900">Nível de risco</h2>
+                <div class="mt-4 space-y-3">
+                  <div class="flex items-center justify-between text-sm">
+                    <span>Alto</span>
+                    <span
+                      class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">Alto</span>
+                  </div>
+                  <div class="flex items-center justify-between text-sm">
+                    <span>Médio</span>
+                    <span
+                      class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Médio</span>
+                  </div>
+                  <div class="flex items-center justify-between text-sm">
+                    <span>Normal</span>
+                    <span
+                      class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">Normal</span>
+                  </div>
+                  <div class="flex items-center justify-between text-sm">
+                    <span>Sem dado</span>
+                    <span
+                      class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">Sem dado</span>
+                  </div>
+                  <p class="text-[11px] text-slate-400">Gatilhos de chuva medida (CEMADEN), previsão e maré. Passe o mouse no card do distrito para ver o motivo.</p>
+                </div>
+              </div>
+
+              <div id="card-infodengue" class="hidden rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 class="flex items-center gap-2 font-bold text-slate-900">Arboviroses agora
+                  <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-800">InfoDengue</span>
+                </h2>
+                <p class="mt-1 text-[11px] text-slate-500">Recife inteiro · semana mais recente</p>
+                <p class="mt-3 text-2xl font-bold text-slate-900"><span id="info-estimados">--</span> <small class="text-sm font-medium text-slate-500">casos estimados</small></p>
+                <p id="info-faixa" class="text-xs text-slate-500"></p>
+                <p class="mt-2 flex items-center gap-2 text-xs text-slate-600">
+                  <span id="info-nivel" class="rounded-full px-2 py-0.5 text-[11px] font-semibold"></span>
+                  <span id="info-semana"></span>
+                </p>
+                <p class="mt-2 text-[11px] text-slate-400">Dado municipal: não varia por bairro. O mapa mostra o histórico por bairro.</p>
+              </div>
+
+              <div class="rounded-md bg-brand-tealsoft p-4 text-xs leading-5 text-brand-navy border border-brand-teal/20">
+                Selecione um distrito no mapa para visualizar chuva acumulada, casos e alertas vigentes.
+              </div>
+            </aside>
+
+          </div>
+      
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'mapa/mapa.js' %}"></script>
+{% endblock %}
 {% if faixa %}
 <section class="mb-5 flex flex-wrap items-center gap-4 rounded-lg border p-4 shadow-sm
   {% if faixa.cor == 'vermelho' %}border-red-300 bg-red-50{% elif faixa.cor == 'laranja' %}border-orange-300 bg-orange-50{% elif faixa.cor == 'verde' %}border-green-300 bg-green-50{% else %}border-slate-300 bg-slate-50{% endif %}">
@@ -10,3 +216,4 @@
   <a href="{% url 'mapa' %}" class="text-sm font-semibold text-blue-700 hover:underline">Ver no mapa →</a>
 </section>
 {% endif %}
+

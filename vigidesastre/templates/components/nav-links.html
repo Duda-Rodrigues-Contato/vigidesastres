@@ -1,20 +1,20 @@
 {% with current=request.resolver_match.url_name %}
-<a href="{% url 'dashboard' %}" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold transition-colors {% if current == 'dashboard' %}bg-slate-800 text-white{% else %}text-slate-400 hover:bg-slate-800 hover:text-white{% endif %}">
-  <i data-lucide="layout-dashboard" class="w-5 h-5"></i><span>Dashboard</span>
+<a href="{% url 'dashboard' %}" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'dashboard' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+  <i data-lucide="layout-dashboard" class="h-5 w-5"></i><span>Dashboard</span>
 </a>
-<a href="{% url 'mapa' %}" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold transition-colors {% if current == 'mapa' %}bg-slate-800 text-white{% else %}text-slate-400 hover:bg-slate-800 hover:text-white{% endif %}">
-  <i data-lucide="map" class="w-5 h-5"></i><span>Mapa</span>
+<a href="{% url 'mapa' %}" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'mapa' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+  <i data-lucide="map" class="h-5 w-5"></i><span>Mapa</span>
 </a>
-<a href="{% url 'alertas' %}" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold transition-colors {% if current == 'alertas' %}bg-slate-800 text-white{% else %}text-slate-400 hover:bg-slate-800 hover:text-white{% endif %}">
-  <i data-lucide="bell-ring" class="w-5 h-5"></i><span>Alertas</span>
+<a href="{% url 'alertas' %}" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'alertas' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+  <i data-lucide="bell-ring" class="h-5 w-5"></i><span>Alertas</span>
 </a>
-<a href="{% url 'calendario' %}" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold transition-colors {% if current == 'calendario' %}bg-slate-800 text-white{% else %}text-slate-400 hover:bg-slate-800 hover:text-white{% endif %}">
-  <i data-lucide="calendar-range" class="w-5 h-5"></i><span>Calendário</span>
+<a href="{% url 'calendario' %}" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'calendario' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+  <i data-lucide="calendar-range" class="h-5 w-5"></i><span>Calendário</span>
 </a>
-<a href="{% url 'relatorios' %}" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold transition-colors {% if current == 'relatorios' %}bg-slate-800 text-white{% else %}text-slate-400 hover:bg-slate-800 hover:text-white{% endif %}">
-  <i data-lucide="file-bar-chart" class="w-5 h-5"></i><span>Relatórios</span>
+<a href="{% url 'relatorios' %}" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'relatorios' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+  <i data-lucide="file-bar-chart" class="h-5 w-5"></i><span>Relatórios</span>
 </a>
-<a href="{% url 'acoes' %}" class="flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold transition-colors {% if current == 'acoes' %}bg-slate-800 text-white{% else %}text-slate-400 hover:bg-slate-800 hover:text-white{% endif %}">
-  <i data-lucide="clipboard-check" class="w-5 h-5"></i><span>Ações</span>
+<a href="{% url 'acoes' %}" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'acoes' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+  <i data-lucide="clipboard-check" class="h-5 w-5"></i><span>Ações</span>
 </a>
 {% endwith %}

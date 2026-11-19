@@ -85,13 +85,18 @@ def dashboard(request):
 
 def situacao_csv(request):
     """A matriz dos distritos como planilha (requisito: exportar para planilha)."""
+    try:
+        situacao = situacao_por_distrito()
+    except Exception:  # noqa: BLE001 - sem dados, a planilha avisa em vez de dar erro 500
+        logger.exception("Falha ao montar a planilha da situação")
+        return HttpResponse("Dados indisponíveis no momento.", status=503, content_type="text/plain; charset=utf-8")
     resposta = HttpResponse(content_type="text/csv; charset=utf-8")
     resposta["Content-Disposition"] = 'attachment; filename="situacao_distritos.csv"'
     resposta.write("\ufeff")  # BOM: o Excel abre os acentos certos
     w = csv.writer(resposta, delimiter=";")
     w.writerow(["Distrito", "Situação", "Chuva 24h (mm)", "Pluviômetro", "Chuva 72h (mm)",
                 "Previsão 24h (mm)", "Alertas abertos", "Motivos"])
-    for d in situacao_por_distrito():
+    for d in situacao:
         w.writerow([d["nome"], d["nivel"], d["chuva_24h_mm"], d["estacao_24h"], d["chuva_72h_mm"],
                     d["previsao_24h_mm"], d["alertas_abertos"], " | ".join(d["motivos"])])
     return resposta
@@ -134,13 +139,18 @@ def calendario(request):
 
 def calendario_csv(request):
     from apps.fontes.repositorios import calendario as repo_calendario
+    try:
+        meses = repo_calendario.por_mes()
+    except PyMongoError:
+        logger.exception("Falha ao ler o calendário de risco para a planilha")
+        return HttpResponse("Dados indisponíveis no momento.", status=503, content_type="text/plain; charset=utf-8")
     resposta = HttpResponse(content_type="text/csv; charset=utf-8")
     resposta["Content-Disposition"] = 'attachment; filename="calendario_risco.csv"'
     resposta.write("\ufeff")
     w = csv.writer(resposta, delimiter=";")
     w.writerow(["Distrito", "Mês", "Atendimentos reativos por dia (média 2014-2024)", "Índice (mês / média do distrito)",
                 "Ano mais calmo", "Média no ano mais calmo", "Ano mais intenso", "Média no ano mais intenso"])
-    for m in repo_calendario.por_mes():
+    for m in meses:
         w.writerow([m["distrito"], m["mes"], m["media_dia"], m["indice"], m["ano_calmo"], m["media_ano_calmo"],
                     m["ano_intenso"], m["media_ano_intenso"]])
     return resposta

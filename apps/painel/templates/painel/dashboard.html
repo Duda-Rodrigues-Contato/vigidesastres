@@ -11,27 +11,24 @@
 {% block content %}
         
           <!-- Cabeçalho da Página -->
-          <header class="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 border-b border-slate-200 pb-5">
+          <header class="mb-8 flex flex-col justify-between gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-center">
             <div class="min-w-0">
-              <h1 class="truncate text-2xl font-bold text-slate-900 md:text-3xl">Dashboard</h1>
+              <h1 class="truncate text-3xl font-extrabold tracking-tight text-brand-navy">Visão Geral</h1>
               {% if meteo %}
-              <p class="mt-1 text-sm text-slate-500">Última leitura dos pluviômetros: {{ meteo.coletado_em|date:"d/m/Y" }} às {{ meteo.coletado_em|time:"H:i" }}</p>
+              <p class="mt-1 flex items-center gap-2 text-sm text-slate-500">
+                <i data-lucide="clock" class="w-4 h-4"></i>
+                Última leitura dos pluviômetros: <span class="font-medium">{{ meteo.coletado_em|date:"d/m/Y" }} às {{ meteo.coletado_em|time:"H:i" }}</span>
+              </p>
               {% else %}
               <p class="mt-1 text-sm text-slate-500">Sem coleta meteorológica — rode <code>python -m etl cemaden previsao</code></p>
               {% endif %}
             </div>
-            <div class="flex shrink-0 items-center gap-2">
-              <a href="{% url 'mapa' %}" class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700">
-                <i data-lucide="map" class="w-4 h-4"></i>
-                <span class="hidden sm:inline">Ver mapa completo</span>
-                <span class="sm:hidden">Mapa</span>
-              </a>
-            </div>
           </header>
 
           {% if erro_banco %}
-          <div class="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-            Não foi possível conectar à base de dados. Os indicadores reais estão indisponíveis — confira a conexão e o <code>MONGO_URI</code>.
+          <div class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 shadow-sm">
+            <div class="flex items-center gap-2 font-semibold"><i data-lucide="alert-triangle" class="w-5 h-5"></i> Erro de Conexão</div>
+            <p class="mt-1">Não foi possível conectar à base de dados. Os indicadores reais estão indisponíveis — confira a conexão e o <code>MONGO_URI</code>.</p>
           </div>
           {% endif %}
 
@@ -39,23 +36,23 @@
           {% include "painel/_saude.html" %}
 
           <!-- Seção de Métricas (KPIs) -->
-          <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
             <!-- Card 1: arboviroses (InfoDengue) -->
-            <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
+            <article class="group rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md"
                      title="Casos novos na semana epidemiológica (dengue, chikungunya e zika), estimados pelo InfoDengue com correção do atraso de notificação. Dado municipal e semanal.">
               <div class="flex items-start justify-between">
                 <div>
-                  <p class="flex items-center gap-2 text-sm font-medium text-slate-500">Arboviroses na semana <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">InfoDengue</span></p>
-                  <p class="mt-2 text-3xl font-bold text-slate-900">{% if arboviroses %}{{ arboviroses.estimados }}{% else %}--{% endif %}{% if arboviroses %} <small class="text-sm font-medium text-slate-500">estimados</small>{% endif %}</p>
+                  <p class="flex items-center gap-2 text-sm font-semibold text-slate-500">Arboviroses <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-800">InfoDengue</span></p>
+                  <p class="mt-2 text-4xl font-extrabold text-slate-900 tracking-tight">{% if arboviroses %}{{ arboviroses.estimados }}{% else %}--{% endif %}{% if arboviroses %} <small class="text-sm font-medium text-slate-400">estimados</small>{% endif %}</p>
                 </div>
-                <div class="grid size-10 place-items-center rounded-md bg-blue-50 text-blue-600">
-                  <i data-lucide="bug" class="w-5 h-5"></i>
+                <div class="grid size-12 place-items-center rounded-xl bg-brand-tealsoft text-brand-teal transition-transform group-hover:scale-105">
+                  <i data-lucide="bug" class="w-6 h-6"></i>
                 </div>
               </div>
               {% if arboviroses %}
-              <p class="mt-1 text-xs text-slate-500">entre {{ arboviroses.estimados_min }} e {{ arboviroses.estimados_max }} · {{ arboviroses.notificados }} já notificados</p>
-              <p class="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold
+              <p class="mt-2 text-xs text-slate-500">entre {{ arboviroses.estimados_min }} e {{ arboviroses.estimados_max }} · {{ arboviroses.notificados }} já notificados</p>
+              <p class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                <span class="inline-flex items-center rounded-md px-2 py-1 text-[11px] font-bold
                   {% if arboviroses.nivel == 4 %}bg-red-100 text-red-800{% elif arboviroses.nivel == 3 %}bg-orange-100 text-orange-800{% elif arboviroses.nivel == 2 %}bg-yellow-100 text-yellow-800{% else %}bg-green-100 text-green-800{% endif %}"
                   title="{{ arboviroses.nivel_texto }} ({{ arboviroses.nivel_doenca }})">{{ arboviroses.nivel_nome }}</span>
                 SE {{ arboviroses.semana }} · {{ arboviroses.inicio|date:"d/m" }} a {{ arboviroses.fim|date:"d/m" }}
@@ -68,105 +65,111 @@
               {% endif %}
             </article>
 
-            <!-- Card 2 -->
-            <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <!-- Card 2: Alertas Sugeridos -->
+            <article class="group rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md">
               <div class="flex items-start justify-between">
                 <div>
-                  <p class="flex items-center gap-2 text-sm font-medium text-slate-500">Alertas sugeridos <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-800" title="Gerados automaticamente pelos gatilhos de chuva e maré. Um operador confirma.">Sistema</span></p>
-                  <p class="mt-2 text-3xl font-bold text-slate-900">{% if alertas is None %}--{% else %}{{ alertas|length }}{% endif %}</p>
+                  <p class="flex items-center gap-2 text-sm font-semibold text-slate-500">Alertas Sugeridos <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600" title="Gerados automaticamente pelos gatilhos de chuva e maré. Um operador confirma.">Auto</span></p>
+                  <p class="mt-2 text-4xl font-extrabold text-slate-900 tracking-tight">{% if alertas is None %}--{% else %}{{ alertas|length }}{% endif %}</p>
                 </div>
-                <div class="grid size-10 place-items-center rounded-md bg-red-50 text-red-600">
-                  <i data-lucide="siren" class="w-5 h-5"></i>
+                <div class="grid size-12 place-items-center rounded-xl bg-red-50 text-red-600 transition-transform group-hover:scale-105">
+                  <i data-lucide="siren" class="w-6 h-6"></i>
                 </div>
               </div>
-              <p class="mt-3 text-xs font-medium text-slate-500">{% if alertas is None %}sem dados para avaliar{% elif alertas %}{{ alertas_altos }} de nível alto{% else %}nenhum gatilho acionado{% endif %}</p>
+              <p class="mt-4 text-sm font-medium {% if alertas %}text-red-600{% else %}text-slate-500{% endif %}">
+                {% if alertas is None %}sem dados para avaliar
+                {% elif alertas %}{{ alertas_altos }} de nível alto
+                {% else %}<span class="flex items-center gap-1 text-green-600"><i data-lucide="check-circle" class="w-4 h-4"></i> Nenhum gatilho acionado</span>{% endif %}
+              </p>
             </article>
 
-            <!-- Card 3 -->
-            <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <!-- Card 3: Distritos -->
+            <article class="group rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md">
               <div class="flex items-start justify-between">
                 <div>
-                  <p class="text-sm font-medium text-slate-500">Distritos monitorados</p>
-                  <p class="mt-2 text-3xl font-bold text-slate-900">{{ total_distritos|default:"--" }}</p>
+                  <p class="text-sm font-semibold text-slate-500">Distritos Monitorados</p>
+                  <p class="mt-2 text-4xl font-extrabold text-slate-900 tracking-tight">{{ total_distritos|default:"--" }}</p>
                 </div>
-                <div class="grid size-10 place-items-center rounded-md bg-green-50 text-green-600">
-                  <i data-lucide="crosshair" class="w-5 h-5"></i>
+                <div class="grid size-12 place-items-center rounded-xl bg-green-50 text-green-600 transition-transform group-hover:scale-105">
+                  <i data-lucide="crosshair" class="w-6 h-6"></i>
                 </div>
               </div>
-              <p class="mt-3 text-xs font-medium text-slate-500">{{ total_unidades|default:"--" }} unidades de saúde no mapa</p>
+              <p class="mt-4 text-sm font-medium text-slate-500">{{ total_unidades|default:"--" }} unidades de saúde na rede</p>
             </article>
 
-            <!-- Card 4 -->
-            <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <!-- Card 4: Ações em Andamento -->
+            <article class="group rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md">
               <div class="flex items-start justify-between">
                 <div>
-                  <p class="flex items-center gap-2 text-sm font-medium text-slate-500">Ações em andamento</p>
-                  <p class="mt-2 text-3xl font-bold text-slate-900">{{ acoes_andamento|default:"0" }}</p>
+                  <p class="flex items-center gap-2 text-sm font-semibold text-slate-500">Ações em Andamento</p>
+                  <p class="mt-2 text-4xl font-extrabold text-slate-900 tracking-tight">{{ acoes_andamento|default:"0" }}</p>
                 </div>
-                <div class="grid size-10 place-items-center rounded-md bg-amber-50 text-amber-600">
-                  <i data-lucide="bell-ring" class="w-5 h-5"></i>
+                <div class="grid size-12 place-items-center rounded-xl bg-amber-50 text-amber-600 transition-transform group-hover:scale-105">
+                  <i data-lucide="bell-ring" class="w-6 h-6"></i>
                 </div>
               </div>
-              <p class="mt-3 text-xs font-medium text-slate-500">{{ equipes_mobilizadas|default:"0" }} equipe{{ equipes_mobilizadas|pluralize }} mobilizada{{ equipes_mobilizadas|pluralize }} · <a class="underline" href="{% url 'acoes' %}">ver ações</a></p>
+              <p class="mt-4 flex items-center justify-between text-sm font-medium text-slate-500">
+                <span>{{ equipes_mobilizadas|default:"0" }} equipe{{ equipes_mobilizadas|pluralize }} mobilizada{{ equipes_mobilizadas|pluralize }}</span>
+                <a class="text-brand-teal hover:text-brand-tealdark hover:underline font-semibold" href="{% url 'acoes' %}">Ver detalhes &rarr;</a>
+              </p>
             </article>
           </section>
 
           <!-- Monitoramento Meteorológico -->
-          <section class="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <div class="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+          <section class="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
               <div>
-                <div class="mb-4 flex items-start gap-3">
-                  <div class="grid size-9 shrink-0 place-items-center rounded-md bg-blue-50 text-blue-600">
-                    <i data-lucide="cloud-rain" class="w-5 h-5"></i>
+                <div class="mb-4 flex items-center gap-4">
+                  <div class="grid size-12 shrink-0 place-items-center rounded-xl bg-brand-tealsoft text-brand-teal">
+                    <i data-lucide="cloud-rain" class="w-6 h-6"></i>
                   </div>
                   <div>
-                    <h2 class="font-bold text-slate-900">Monitoramento meteorológico</h2>
-                    <p class="text-xs text-slate-500">Chuva medida: {{ meteo.fonte_chuva|default:"Dados da Rede Observacional do CEMADEN/MCTIC" }} · previsão e temperatura: Open-Meteo (modelo)</p>
+                    <h2 class="text-lg font-bold text-slate-900">Monitoramento Meteorológico</h2>
+                    <p class="text-sm text-slate-500">Chuva: {{ meteo.fonte_chuva|default:"CEMADEN/MCTIC" }} · Previsão: Open-Meteo</p>
                   </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
                   {% if not meteo %}
-                  <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">Sem dados</span>
+                  <span class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700"><i data-lucide="help-circle" class="w-3 h-3"></i> Sem dados</span>
                   {% elif meteo.desatualizado %}
-                  <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">Desatualizado há {{ meteo.idade_horas }} h</span>
+                  <span class="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800"><i data-lucide="clock" class="w-3 h-3"></i> Desatualizado há {{ meteo.idade_horas }}h</span>
                   {% else %}
-                  <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">Atualizado</span>
+                  <span class="inline-flex items-center gap-1 rounded-md bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800"><i data-lucide="check-circle-2" class="w-3 h-3"></i> Atualizado</span>
                   {% endif %}
-                  {% if meteo %}<span class="text-xs text-slate-500">Última leitura: {{ meteo.coletado_em|date:"d/m" }} às {{ meteo.coletado_em|time:"H:i" }}</span>{% endif %}
                 </div>
               </div>
 
-              <div class="grid gap-3 sm:grid-cols-2 xl:min-w-[46rem] xl:grid-cols-4">
-                <div class="rounded-md bg-slate-100 p-4">
-                  <div class="flex items-center gap-2 text-xs text-slate-500">
-                    <i data-lucide="cloud-rain" class="w-4 h-4"></i> Chuva medida · últimas 24h
+              <div class="grid gap-4 sm:grid-cols-2 xl:min-w-[48rem] xl:grid-cols-4">
+                <div class="rounded-xl border border-slate-100 bg-slate-50 p-5 transition-colors hover:bg-slate-100">
+                  <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <i data-lucide="cloud-rain" class="w-4 h-4 text-brand-teal"></i> Medido (24h)
                   </div>
-                  <strong class="mt-1 block text-2xl text-slate-900">{% if meteo.chuva_24h is not None %}{{ meteo.chuva_24h|floatformat:1 }}{% else %}--{% endif %} <small class="text-sm font-medium">mm</small></strong>
-                  <p class="mt-1 text-xs font-semibold text-slate-700">{{ meteo.chuva_24h_classe|default:"" }}</p>
-                  <p class="text-[11px] text-slate-500">{{ meteo.chuva_24h_zona|default:"" }}</p>
+                  <strong class="mt-2 block text-3xl font-extrabold text-slate-900">{% if meteo.chuva_24h is not None %}{{ meteo.chuva_24h|floatformat:1 }}{% else %}--{% endif %}<span class="text-base font-semibold text-slate-500 ml-1">mm</span></strong>
+                  <p class="mt-2 text-xs font-bold text-slate-700">{{ meteo.chuva_24h_classe|default:"-" }}</p>
+                  <p class="text-[11px] text-slate-500">{{ meteo.chuva_24h_zona|default:"-" }}</p>
                 </div>
-                <div class="rounded-md border border-blue-200 bg-blue-50 p-4">
-                  <div class="flex items-center gap-2 text-xs text-blue-700">
-                    <i data-lucide="cloud-drizzle" class="w-4 h-4"></i> Previsão · próximas 24h (modelo)
+                <div class="rounded-xl border border-blue-200 bg-blue-50 p-5 transition-colors hover:bg-blue-100/50">
+                  <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-700">
+                    <i data-lucide="cloud-drizzle" class="w-4 h-4"></i> Previsão (24h)
                   </div>
-                  <strong class="mt-1 block text-2xl text-blue-900">{% if meteo.previsao_24h is not None %}{{ meteo.previsao_24h|floatformat:1 }}{% else %}--{% endif %} <small class="text-sm font-medium">mm</small></strong>
-                  <p class="mt-1 text-xs font-semibold text-blue-900">{{ meteo.previsao_24h_classe|default:"" }}</p>
-                  <p class="text-[11px] text-blue-700">{% if meteo.previsao_24h is not None %}{{ meteo.previsao_24h_zona }}{% else %}rode o coletor de novo{% endif %}</p>
+                  <strong class="mt-2 block text-3xl font-extrabold text-blue-900">{% if meteo.previsao_24h is not None %}{{ meteo.previsao_24h|floatformat:1 }}{% else %}--{% endif %}<span class="text-base font-semibold text-blue-700 ml-1">mm</span></strong>
+                  <p class="mt-2 text-xs font-bold text-blue-900">{{ meteo.previsao_24h_classe|default:"-" }}</p>
+                  <p class="text-[11px] text-blue-700">{% if meteo.previsao_24h is not None %}{{ meteo.previsao_24h_zona }}{% else %}aguardando modelo{% endif %}</p>
                 </div>
-                <div class="rounded-md bg-slate-100 p-4">
-                  <div class="flex items-center gap-2 text-xs text-slate-500">
-                    <i data-lucide="thermometer-sun" class="w-4 h-4"></i> Temperatura
+                <div class="rounded-xl border border-slate-100 bg-slate-50 p-5 transition-colors hover:bg-slate-100">
+                  <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <i data-lucide="thermometer-sun" class="w-4 h-4 text-orange-500"></i> Temperatura
                   </div>
-                  <strong class="mt-1 block text-2xl text-slate-900">{% if meteo.temp_min is not None %}{{ meteo.temp_min|floatformat:1 }}–{{ meteo.temp_max|floatformat:1 }}{% else %}--{% endif %} <small class="text-sm font-medium">°C</small></strong>
-                  <p class="mt-1 text-[11px] text-slate-500">entre os distritos (modelo)</p>
+                  <strong class="mt-2 block text-3xl font-extrabold text-slate-900">{% if meteo.temp_min is not None %}{{ meteo.temp_min|floatformat:0 }}–{{ meteo.temp_max|floatformat:0 }}{% else %}--{% endif %}<span class="text-base font-semibold text-slate-500 ml-1">°C</span></strong>
+                  <p class="mt-2 text-xs text-slate-500">Mínima e Máxima</p>
                 </div>
-                <div class="rounded-md p-4 {% if mare.proxima_alta %}border border-amber-300 bg-amber-50{% else %}bg-slate-100{% endif %}"
+                <div class="rounded-xl border p-5 transition-colors {% if mare.proxima_alta %}border-amber-200 bg-amber-50 hover:bg-amber-100/50{% else %}border-slate-100 bg-slate-50 hover:bg-slate-100{% endif %}"
                      title="Altura em relação ao nível médio do mar. Modelo Open-Meteo, célula ~16 km mar adentro.">
-                  <div class="flex items-center gap-2 text-xs text-slate-500">
-                    <i data-lucide="waves" class="w-4 h-4"></i> Próxima maré cheia
+                  <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <i data-lucide="waves" class="w-4 h-4 {% if mare.proxima_alta %}text-amber-600{% else %}text-blue-500{% endif %}"></i> Maré Cheia
                   </div>
-                  <strong class="mt-1 block text-2xl text-slate-900">{% if mare %}{{ mare.proxima_nivel|floatformat:2 }}{% else %}--{% endif %} <small class="text-sm font-medium">m</small></strong>
-                  <p class="mt-1 text-xs font-semibold {% if mare.proxima_alta %}text-amber-800{% else %}text-slate-700{% endif %}">{% if mare %}{% if mare.proxima_alta %}Maré alta (sizígia){% else %}Maré normal{% endif %}{% endif %}</p>
+                  <strong class="mt-2 block text-3xl font-extrabold text-slate-900">{% if mare %}{{ mare.proxima_nivel|floatformat:2 }}{% else %}--{% endif %}<span class="text-base font-semibold text-slate-500 ml-1">m</span></strong>
+                  <p class="mt-2 text-xs font-bold {% if mare.proxima_alta %}text-amber-800{% else %}text-slate-700{% endif %}">{% if mare %}{% if mare.proxima_alta %}Sizígia (Alta){% else %}Normal{% endif %}{% else %}-{% endif %}</p>
                   <p class="text-[11px] text-slate-500">{% if mare %}{{ mare.proxima_quando }}{% else %}rode <code>python -m etl mare</code>{% endif %}</p>
                 </div>
               </div>
@@ -175,109 +178,105 @@
 
           {% include "painel/_matriz.html" %}
 
-          <!-- Agora: proximas 48h e alertas sugeridos -->
-          <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <!-- Gráficos e Avisos -->
+          <div class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
 
-            <section class="rounded-lg border border-slate-200 bg-white min-w-0 p-5 shadow-sm">
-              <div class="mb-4 flex items-start gap-3">
-                <div class="grid size-9 shrink-0 place-items-center rounded-md bg-blue-50 text-blue-600">
-                  <i data-lucide="waves" class="w-5 h-5"></i>
+            <section class="rounded-xl border border-slate-200 bg-white min-w-0 p-6 shadow-sm">
+              <div class="mb-6 flex items-center gap-4">
+                <div class="grid size-10 shrink-0 place-items-center rounded-lg bg-brand-tealsoft text-brand-teal">
+                  <i data-lucide="activity" class="w-5 h-5"></i>
                 </div>
                 <div>
-                  <h2 class="font-bold text-slate-900">Próximas 48h — chuva prevista × maré</h2>
-                  <p class="text-xs text-slate-500">Faixas cinza: noite (18h às 6h) · Chuva prevista no distrito com maior previsão{% if proximas_48h.zona %} ({{ proximas_48h.zona }}){% endif %} · linha tracejada: limiar de maré alta · Open-Meteo, modelo</p>
+                  <h2 class="text-lg font-bold text-slate-900">Próximas 48h — Chuva × Maré</h2>
+                  <p class="text-sm text-slate-500">Faixas cinza: noite (18h às 6h) · Linha tracejada: limiar de maré alta</p>
                 </div>
               </div>
               {% if proximas_48h %}
-              <div class="h-72 w-full relative">
+              <div class="relative h-80 w-full rounded-lg border border-slate-100 bg-slate-50/50 p-2">
                 <canvas id="grafico48h"></canvas>
               </div>
               {{ proximas_48h|json_script:"dados-48h" }}
               {% else %}
-              <div class="grid h-72 place-items-center rounded-md border border-dashed border-slate-300 text-sm text-slate-500">
-                Sem previsão — rode <code class="mx-1">python -m etl previsao mare</code>
+              <div class="grid h-80 place-items-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 text-sm font-medium text-slate-500">
+                Sem previsão — rode <code class="mx-1 rounded bg-slate-200 px-1 py-0.5">python -m etl previsao mare</code>
               </div>
               {% endif %}
             </section>
 
-            <aside class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <div class="mb-4 flex items-start gap-3">
-                <div class="grid size-9 shrink-0 place-items-center rounded-md bg-red-50 text-red-600">
-                  <i data-lucide="siren" class="w-5 h-5"></i>
-                </div>
-                <div>
-                  <h2 class="flex items-center gap-2 font-bold text-slate-900">Alertas sugeridos <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-800" title="Gerados automaticamente pelos gatilhos de chuva e maré. Um operador confirma.">Sistema</span></h2>
-                  <p class="text-xs text-slate-500">Gatilhos de chuva e maré · um operador confirma</p>
-                </div>
-              </div>
-
-              <div class="mb-4 rounded-md border {% if avisos %}border-orange-200 bg-orange-50{% else %}border-slate-200 bg-slate-50{% endif %} p-3">
-                <p class="text-xs font-semibold uppercase tracking-wide {% if avisos %}text-orange-800{% else %}text-slate-500{% endif %}">Avisos oficiais · INMET</p>
-                {% for a in avisos %}
-                <div class="mt-2">
-                  <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold {% if a.nivel == 3 %}bg-red-100 text-red-800{% elif a.nivel == 2 %}bg-orange-100 text-orange-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">{{ a.severidade }}</span>
-                  <p class="mt-1 text-sm font-semibold text-slate-900">{{ a.evento }}</p>
-                  <p class="text-[11px] text-slate-600">{{ a.inicio|date:"d/m H:i" }} a {{ a.fim|date:"d/m H:i" }}{% if a.link %} · <a class="underline" href="{{ a.link }}" target="_blank" rel="noopener">ver aviso</a>{% endif %}</p>
-                </div>
-                {% empty %}
-                <p class="mt-1 text-xs text-slate-500">Nenhum aviso do INMET em vigor para o Recife.</p>
-                {% endfor %}
-              </div>
-
-              {% if alertas is None %}
-              <p class="rounded-md bg-slate-50 p-3 text-sm text-slate-500">Sem dados meteorológicos para avaliar os gatilhos.</p>
-              {% elif alertas %}
-              <div class="divide-y divide-slate-100">
-                {% for a in alertas %}
-                <div class="py-3 first:pt-0">
-                  <div class="flex items-center justify-between gap-2">
-                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold {% if a.nivel == 'ALTO' %}bg-red-100 text-red-800{% else %}bg-amber-100 text-amber-800{% endif %}">{{ a.nivel }}</span>
-                    <span class="text-xs text-slate-500">{{ a.zona }}</span>
+            <aside class="flex flex-col gap-5">
+              <!-- Avisos INMET -->
+              <div class="rounded-xl border {% if avisos %}border-orange-200 bg-orange-50{% else %}border-slate-200 bg-white shadow-sm{% endif %} p-6">
+                <h2 class="flex items-center gap-2 text-sm font-bold uppercase tracking-wide {% if avisos %}text-orange-800{% else %}text-slate-500{% endif %}">
+                  <i data-lucide="radio" class="w-4 h-4"></i> Avisos Oficiais (INMET)
+                </h2>
+                <div class="mt-4 flex flex-col gap-3">
+                  {% for a in avisos %}
+                  <div class="rounded-lg bg-white/60 p-3 shadow-sm">
+                    <span class="inline-flex items-center rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide {% if a.nivel == 3 %}bg-red-100 text-red-800{% elif a.nivel == 2 %}bg-orange-100 text-orange-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">{{ a.severidade }}</span>
+                    <p class="mt-2 text-sm font-bold text-slate-900">{{ a.evento }}</p>
+                    <p class="mt-1 text-xs text-slate-600">{{ a.inicio|date:"d/m H:i" }} a {{ a.fim|date:"d/m H:i" }}{% if a.link %} · <a class="font-semibold underline hover:text-brand-navy" href="{{ a.link }}" target="_blank" rel="noopener">Ver aviso</a>{% endif %}</p>
                   </div>
-                  <h3 class="mt-2 text-sm font-semibold text-slate-900">Risco de {{ a.tipo|lower }}</h3>
-                  <p class="mt-1 text-xs text-slate-600">{{ a.motivo }}</p>
+                  {% empty %}
+                  <p class="text-sm text-slate-500">Nenhum aviso em vigor para o Recife.</p>
+                  {% endfor %}
                 </div>
-                {% endfor %}
               </div>
-              {% else %}
-              <div class="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-                Nenhum gatilho acionado. Previsão de chuva e maré dentro dos limiares.
-              </div>
-              {% endif %}
 
-              {% if alertas is not None and not mare %}
-              <p class="mt-3 text-[11px] text-amber-700">Sem dado de maré: o risco de alagamento está sendo avaliado só pela chuva.</p>
-              {% endif %}
-              <p class="mt-4 border-t border-slate-100 pt-3 text-[11px] leading-relaxed text-slate-500">
-                Limiares iniciais da literatura (Souza et al., 2012, com dados da Defesa Civil do Recife), ainda não calibrados com o histórico local. Acumulado de 72 h medido (pior pluviômetro do distrito); previsão de 24 h por modelo.
-              </p>
+              <!-- Alertas do Sistema -->
+              <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm flex-1">
+                <h2 class="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-800">
+                  <i data-lucide="cpu" class="w-4 h-4 text-brand-teal"></i> Gatilhos do Sistema
+                </h2>
+                <div class="mt-4">
+                  {% if alertas is None %}
+                  <p class="rounded-lg bg-slate-50 p-4 text-sm text-slate-500">Sem dados meteorológicos para avaliar.</p>
+                  {% elif alertas %}
+                  <div class="flex flex-col gap-3">
+                    {% for a in alertas %}
+                    <div class="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                      <div class="flex items-center justify-between gap-2">
+                        <span class="inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wide {% if a.nivel == 'ALTO' %}bg-red-100 text-red-800{% else %}bg-amber-100 text-amber-800{% endif %}">{{ a.nivel }}</span>
+                        <span class="text-xs font-semibold text-slate-500">{{ a.zona }}</span>
+                      </div>
+                      <h3 class="mt-2 text-sm font-bold text-slate-900">Risco de {{ a.tipo|lower }}</h3>
+                      <p class="mt-1 text-xs text-slate-600">{{ a.motivo }}</p>
+                    </div>
+                    {% endfor %}
+                  </div>
+                  {% else %}
+                  <div class="flex flex-col items-center justify-center rounded-lg border border-green-100 bg-green-50 p-6 text-center">
+                    <i data-lucide="check-circle" class="w-8 h-8 text-green-500 mb-2"></i>
+                    <p class="text-sm font-medium text-green-800">Tudo calmo. Previsão de chuva e maré dentro da normalidade.</p>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
             </aside>
-
           </div>
 
-          <!-- Contexto: historico -->
-          <section class="mt-5 rounded-lg border border-slate-200 bg-white min-w-0 p-5 shadow-sm">
-              <div class="mb-4 flex items-start gap-3">
-                <div class="grid size-9 shrink-0 place-items-center rounded-md bg-blue-50 text-blue-600">
-                  <i data-lucide="activity" class="w-5 h-5"></i>
+          <!-- Histórico Diário -->
+          <section class="mt-6 rounded-xl border border-slate-200 bg-white min-w-0 p-6 shadow-sm">
+              <div class="mb-6 flex items-center gap-4">
+                <div class="grid size-10 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600">
+                  <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
                 </div>
                 <div>
-                  <h2 class="font-bold text-slate-900">Chuva diária medida — últimos 14 dias</h2>
-                  <p class="text-xs text-slate-500">Barras: média dos pluviômetros · linha: pior pluviômetro do dia · Dados da Rede Observacional do CEMADEN/MCTIC · "hoje" é parcial</p>
+                  <h2 class="text-lg font-bold text-slate-900">Histórico de Chuva — Últimos 14 dias</h2>
+                  <p class="text-sm text-slate-500">Média dos pluviômetros (barras) e pior leitura do dia (linha).</p>
                 </div>
               </div>
 
               {% if chuva_diaria %}
-              <div class="h-72 w-full relative">
+              <div class="relative h-72 w-full">
                 <canvas id="graficoChuva"></canvas>
               </div>
               {{ chuva_diaria|json_script:"dados-chuva-diaria" }}
               {% else %}
-              <div class="grid h-72 place-items-center rounded-md border border-dashed border-slate-300 text-sm text-slate-500">
-                Sem dados de chuva — rode <code class="mx-1">python -m etl cemaden</code>
+              <div class="grid h-72 place-items-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 text-sm font-medium text-slate-500">
+                Sem dados de chuva — rode <code class="mx-1 rounded bg-slate-200 px-1 py-0.5">python -m etl cemaden</code>
               </div>
               {% endif %}
-            </section>
+          </section>
       
 {% endblock %}
 

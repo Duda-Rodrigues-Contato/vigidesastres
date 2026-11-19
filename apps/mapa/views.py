@@ -1,5 +1,10 @@
 """Mapa e APIs GeoJSON que ele consome."""
 
+import logging
+from functools import wraps
+
+from pymongo.errors import PyMongoError
+
 from apps.painel.situacao import situacao_por_distrito
 
 from django.http import JsonResponse
@@ -9,10 +14,26 @@ from apps.fontes.repositorios import arboviroses as repo_arboviroses
 from apps.fontes.repositorios import referencia as repo_referencia
 
 
+logger = logging.getLogger(__name__)
+
+
+def _tolera_falha_mongo(view):
+    """Mongo fora do ar vira 503 em JSON (o mapa mostra aviso), não erro 500."""
+    @wraps(view)
+    def interna(request, *args, **kwargs):
+        try:
+            return view(request, *args, **kwargs)
+        except PyMongoError:
+            logger.exception("Falha ao consultar o MongoDB em %s", view.__name__)
+            return JsonResponse({"erro": "Banco de dados indisponível no momento."}, status=503)
+    return interna
+
+
 def mapa_view(request):
     return render(request, "mapa/mapa.html")
 
 
+@_tolera_falha_mongo
 def get_distritos_geojson(request):
     """Distritos sanitários do Recife (8, desde a reorganização de 2014).
 
@@ -24,6 +45,7 @@ def get_distritos_geojson(request):
     return JsonResponse({"type": "FeatureCollection", "features": features})
 
 
+@_tolera_falha_mongo
 def get_unidades_geojson(request):
     """Unidades de saúde como GeoJSON, prontas para o Leaflet.
 
@@ -53,16 +75,19 @@ def get_unidades_geojson(request):
     return JsonResponse({"type": "FeatureCollection", "features": features})
 
 
+@_tolera_falha_mongo
 def get_chuva_distritos_geojson(request):
     """Distritos coloridos pela chuva medida em 24 h (pior pluviômetro do distrito)."""
     return JsonResponse(painel_chuva.chuva_por_distrito_geojson(repo_referencia.distritos_features()))
 
 
+@_tolera_falha_mongo
 def get_estacoes_chuva_geojson(request):
     """Pluviômetros do CEMADEN como pontos, com a chuva das últimas 24 h."""
     return JsonResponse(painel_chuva.estacoes_geojson())
 
 
+@_tolera_falha_mongo
 def get_areas_risco_geojson(request):
     """Bairros que contêm áreas de risco alto ou muito alto (R3/R4).
 
@@ -92,6 +117,7 @@ def get_areas_risco_geojson(request):
 DOENCAS_ARBO = ("dengue", "chikungunya", "zika")
 
 
+@_tolera_falha_mongo
 def get_arboviroses_bairros_geojson(request):
     """Casos prováveis e incidência por bairro, num ano. Histórico: o arquivo
     mais recente da prefeitura é de 2025; a semana atual vem do InfoDengue.
@@ -143,6 +169,7 @@ def get_arboviroses_bairros_geojson(request):
     })
 
 
+@_tolera_falha_mongo
 def get_arboviroses_resumo(request):
     """Situação da semana na cidade (InfoDengue), para o painel do mapa."""
     resumo = repo_arboviroses.resumo_semana_cidade()
@@ -152,6 +179,7 @@ def get_arboviroses_resumo(request):
 INDICADORES_COMUNIDADE = {"alagamento": "IND_ALAGAM", "deslizamento": "DENS_ESCOR", "indice": "Indice_COM"}
 
 
+@_tolera_falha_mongo
 def get_comunidades_geojson(request):
     """Comunidades de Interesse Social (levantamento de 2014).
 
@@ -179,6 +207,7 @@ def get_comunidades_geojson(request):
 TIPOS_REDE = ("abrigo", "escola", "cras")
 
 
+@_tolera_falha_mongo
 def get_rede_apoio_geojson(request):
     """Abrigos, escolas e CRAS como pontos. ?tipo=abrigo|escola|cras (opcional)."""
     tipo = request.GET.get("tipo")
@@ -202,11 +231,13 @@ def get_rede_apoio_geojson(request):
     return JsonResponse({"type": "FeatureCollection", "features": features})
 
 
+@_tolera_falha_mongo
 def get_situacao_distritos(request):
     """Nível de cada distrito (gatilhos reais), chuva, previsão e alertas abertos."""
     return JsonResponse({"distritos": situacao_por_distrito()})
 
 
+@_tolera_falha_mongo
 def get_vulnerabilidade_geojson(request):
     """Bairros com o índice de vulnerabilidade (estrutural, histórico e geral)."""
     indices = {v["chave"]: v for v in repo_referencia.vulnerabilidade()}

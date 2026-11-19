@@ -64,3 +64,36 @@ def test_tela_de_alertas_mostra_do_banco_e_muda_status(client):
     assert tela.status_code == 200 and "Deslizamento" in tela.content.decode() and tela.context["totais"]["aberto"] == 1
     r = client.post(f"/api/alertas/{a.id}/status/", {"status": "monitorando"}, content_type="application/json")
     assert r.status_code == 200 and r.json()["status"] == "Monitorando"
+
+
+def _alerta(chave="k1"):
+    return Alerta.objects.create(titulo="T", tipo="Deslizamento", nivel="ALTO", distrito="DS III", motivo="m", chave=chave)
+
+
+def test_telas_emitem_cookie_csrf_e_post_passa_com_o_token():
+    """O JS lê o cookie csrftoken; sem ele, os POSTs levam 403 no navegador."""
+    from django.test import Client
+    navegador = Client(enforce_csrf_checks=True)  # o client padrão ignora CSRF e esconde o problema
+    a = _alerta()
+    url = f"/api/alertas/{a.id}/status/"
+    corpo = {"status": "monitorando"}
+
+    assert navegador.post(url, corpo, content_type="application/json").status_code == 403  # sem cookie
+
+    navegador.get("/alertas/")
+    assert "csrftoken" in navegador.cookies
+    token = navegador.cookies["csrftoken"].value
+    r = navegador.post(url, corpo, content_type="application/json", HTTP_X_CSRFTOKEN=token)
+    assert r.status_code == 200
+
+    navegador2 = Client(enforce_csrf_checks=True)
+    navegador2.get("/acoes/")
+    assert "csrftoken" in navegador2.cookies
+
+
+def test_json_invalido_devolve_400_e_nao_500(client):
+    a = _alerta("k2")
+    assert client.post(f"/api/alertas/{a.id}/status/", "{quebrado", content_type="application/json").status_code == 400
+    assert client.post("/api/acoes/", "{quebrado", content_type="application/json").status_code == 400
+    assert client.post("/api/acoes/", "[1, 2]", content_type="application/json").status_code == 400
+

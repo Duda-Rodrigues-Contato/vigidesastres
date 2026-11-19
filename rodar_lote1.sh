@@ -3,7 +3,12 @@
 # Roda na ordem certa e para no primeiro erro. Todas as cargas são retomáveis:
 # se parar, rode de novo e ele continua de onde parou.
 set -e
-source .venv/Scripts/activate 2>/dev/null || source .venv/bin/activate
+# ativa o ambiente virtual, seja ".venv" ou "venv", no Windows (Git Bash) ou Linux/Mac
+for a in .venv/Scripts/activate .venv/bin/activate venv/Scripts/activate venv/bin/activate; do
+  if [ -f "$a" ]; then source "$a"; break; fi
+done
+command -v python >/dev/null || { echo "Python não encontrado: crie o ambiente virtual (veja o README)"; exit 1; }
+python -c "import django" 2>/dev/null || { echo "Django não instalado neste ambiente: rode pip install -r requirements.txt"; exit 1; }
 
 echo "== 1/8 testes";                            python -m pytest -q
 echo "== 2/8 REINDESC (dados/reindesc/*.csv)";    python -m etl.historico.reindesc

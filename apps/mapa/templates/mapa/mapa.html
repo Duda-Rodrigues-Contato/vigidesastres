@@ -12,7 +12,7 @@
 {% block content %}
           <header class="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 border-b border-slate-200 pb-5">
             <div class="min-w-0">
-              <h1 class="truncate text-2xl font-bold text-slate-900 md:text-3xl">Mapa de Monitoramento</h1>
+              <h1 class="truncate text-2xl font-bold text-brand-navy md:text-3xl">Mapa de Monitoramento</h1>
               <p class="mt-1 text-sm text-slate-500">Distritos sanitários do Recife · atualização em tempo real</p>
             </div>
           </header>
@@ -28,7 +28,7 @@
 
               <div
                 class="pointer-events-none absolute left-5 top-5 z-10 rounded-md border border-slate-200 bg-white/95 px-3 py-2 text-xs font-semibold shadow-sm flex items-center gap-2">
-                <i data-lucide="map-pinned" class="text-blue-600 w-4 h-4"></i> Recife · PE
+                <i data-lucide="map-pinned" class="text-brand-teal w-4 h-4"></i> Recife · PE
               </div>
 
               <!-- Card Flutuante de Detalhes -->
@@ -45,17 +45,17 @@
                 </div>
                 <div class="mt-3 grid grid-cols-3 gap-2 text-center">
                   <div class="rounded bg-slate-100 p-2">
-                    <i data-lucide="cloud-rain" class="mx-auto text-blue-600 w-4 h-4"></i>
+                    <i data-lucide="cloud-rain" class="mx-auto text-brand-teal w-4 h-4"></i>
                     <strong id="district-rain" class="mt-1 block text-sm">--</strong>
                     <small id="district-rain-label" class="text-[10px] text-slate-500">Chuva 24h</small>
                   </div>
                   <div class="rounded bg-slate-100 p-2">
-                    <i data-lucide="cloud-sun-rain" class="mx-auto text-blue-600 w-4 h-4"></i>
+                    <i data-lucide="cloud-sun-rain" class="mx-auto text-brand-teal w-4 h-4"></i>
                     <strong id="district-cases" class="mt-1 block text-sm">--</strong>
                     <small class="text-[10px] text-slate-500">Previsão 24h</small>
                   </div>
                   <div class="rounded bg-slate-100 p-2">
-                    <i data-lucide="building-2" class="mx-auto text-blue-600 w-4 h-4"></i>
+                    <i data-lucide="building-2" class="mx-auto text-brand-teal w-4 h-4"></i>
                     <strong id="district-alerts" class="mt-1 block text-sm">--</strong>
                     <small class="text-[10px] text-slate-500">Alertas abertos</small>
                   </div>
@@ -67,17 +67,17 @@
             <aside class="space-y-5">
               <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 class="flex items-center gap-2 font-bold text-slate-900">
-                  <i data-lucide="layers-3" class="text-blue-600 w-5 h-5"></i> Camadas do mapa
+                  <i data-lucide="layers-3" class="text-brand-teal w-5 h-5"></i> Camadas do mapa
                 </h2>
                 <div class="mt-4 space-y-3">
                   <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Clima</p>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
-                    <input type="checkbox" id="camada-chuva" class="size-4 accent-blue-600"> Chuva medida
+                    <input type="checkbox" id="camada-chuva" class="size-4 accent-brand-teal"> Chuva medida
                     <span class="text-xs text-slate-400">(CEMADEN)</span>
                   </label>
                   <p class="pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Risco</p>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
-                    <input type="checkbox" id="camada-risco" class="size-4 accent-blue-600"> Áreas de risco
+                    <input type="checkbox" id="camada-risco" class="size-4 accent-brand-teal"> Áreas de risco
                     <span class="text-xs text-slate-400">(Defesa Civil)</span>
                   </label>
                   <div id="legenda-risco" class="hidden -mt-1 ml-7 space-y-1 text-[11px] text-slate-600">
@@ -87,7 +87,7 @@
                     <p class="text-slate-400">Bairros que contêm áreas de risco alto ou muito alto</p>
                   </div>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
-                    <input type="checkbox" id="camada-com" class="size-4 accent-blue-600"> Comunidades
+                    <input type="checkbox" id="camada-com" class="size-4 accent-brand-teal"> Comunidades
                     <span class="text-xs text-slate-400">(2014)</span>
                   </label>
                   <div id="controles-com" class="hidden -mt-1 ml-7 space-y-2 text-[11px] text-slate-600">
@@ -100,7 +100,7 @@
                     <p class="text-slate-400">Comunidades de Interesse Social, levantamento de 2014. Nota 0 a 10, maior = pior.</p>
                   </div>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
-                    <input type="checkbox" id="camada-vul" class="size-4 accent-blue-600"> Vulnerabilidade
+                    <input type="checkbox" id="camada-vul" class="size-4 accent-brand-teal"> Vulnerabilidade
                     <span class="text-xs text-slate-400">(índice por bairro)</span>
                   </label>
                   <div id="controles-vul" class="hidden -mt-1 ml-7 space-y-2 text-[11px] text-slate-600">
@@ -114,7 +114,7 @@
                   </div>
                   <p class="pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Saúde</p>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
-                    <input type="checkbox" id="camada-arbo" class="size-4 accent-blue-600"> Arboviroses por bairro
+                    <input type="checkbox" id="camada-arbo" class="size-4 accent-brand-teal"> Arboviroses por bairro
                     <span class="text-xs text-slate-400">(histórico)</span>
                   </label>
                   <div id="controles-arbo" class="hidden -mt-1 ml-7 space-y-2 text-[11px] text-slate-600">
@@ -131,20 +131,20 @@
                     <p class="text-slate-400">Casos prováveis por 10 mil habitantes, por bairro de residência</p>
                   </div>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
-                    <input type="checkbox" checked id="camada-unidades" class="size-4 accent-blue-600"> Unidades de saúde
+                    <input type="checkbox" checked id="camada-unidades" class="size-4 accent-brand-teal"> Unidades de saúde
                     <span id="contador-unidades" class="text-xs text-slate-400"></span>
                   </label>
                   <p class="pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Rede de apoio</p>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
-                    <input type="checkbox" checked id="camada-abrigo" class="size-4 accent-blue-600"> <i class="grid size-4 place-items-center rounded-[3px] border border-white bg-green-700 text-[9px] font-bold not-italic text-white shadow">A</i> Abrigos
+                    <input type="checkbox" checked id="camada-abrigo" class="size-4 accent-brand-teal"> <i class="grid size-4 place-items-center rounded-[3px] border border-white bg-green-700 text-[9px] font-bold not-italic text-white shadow">A</i> Abrigos
                     <span id="contador-abrigo" class="text-xs text-slate-400"></span>
                   </label>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
-                    <input type="checkbox" id="camada-escola" class="size-4 accent-blue-600"> <i class="inline-block size-2.5 rounded-full border border-white bg-blue-800 shadow"></i> Escolas municipais
+                    <input type="checkbox" id="camada-escola" class="size-4 accent-brand-teal"> <i class="inline-block size-2.5 rounded-full border border-white bg-blue-800 shadow"></i> Escolas municipais
                     <span id="contador-escola" class="text-xs text-slate-400"></span>
                   </label>
                   <label class="flex cursor-pointer items-center gap-3 text-sm">
-                    <input type="checkbox" id="camada-cras" class="size-4 accent-blue-600"> <i class="inline-block size-2.5 rotate-45 border border-white bg-orange-600 shadow"></i> CRAS
+                    <input type="checkbox" id="camada-cras" class="size-4 accent-brand-teal"> <i class="inline-block size-2.5 rotate-45 border border-white bg-orange-600 shadow"></i> CRAS
                     <span id="contador-cras" class="text-xs text-slate-400"></span>
                   </label>
                   <p class="-mt-1 ml-7 text-[11px] text-slate-400">O cadastro de abrigos não indica se estão abertos nem a capacidade.</p>
@@ -192,7 +192,7 @@
                 <p class="mt-2 text-[11px] text-slate-400">Dado municipal: não varia por bairro. O mapa mostra o histórico por bairro.</p>
               </div>
 
-              <div class="rounded-md bg-blue-50 p-4 text-xs leading-5 text-blue-700 border border-blue-100">
+              <div class="rounded-md bg-brand-tealsoft p-4 text-xs leading-5 text-brand-navy border border-brand-teal/20">
                 Selecione um distrito no mapa para visualizar chuva acumulada, casos e alertas vigentes.
               </div>
             </aside>

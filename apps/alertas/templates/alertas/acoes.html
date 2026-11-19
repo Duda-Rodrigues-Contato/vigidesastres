@@ -8,12 +8,12 @@
 
 <header class="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 border-b border-slate-200 pb-5">
   <div class="min-w-0">
-    <h1 class="truncate text-2xl font-bold text-slate-900 md:text-3xl">Ações</h1>
+    <h1 class="truncate text-2xl font-bold text-brand-navy md:text-3xl">Ações</h1>
     <p class="mt-1 text-sm text-slate-500">Registro e acompanhamento de ações de resposta</p>
   </div>
   <div class="flex shrink-0 items-center gap-2">
     <button onclick="toggleModal(true)"
-      class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+      class="inline-flex items-center gap-2 rounded-md bg-brand-teal px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-tealdark">
       <i data-lucide="plus" class="w-4 h-4"></i>
       <span class="hidden sm:inline">Registrar nova ação</span>
       <span class="sm:hidden">Registrar</span>
@@ -24,7 +24,7 @@
 <!-- Filtros -->
 <div class="mb-4 inline-flex rounded-md border border-slate-200 bg-white p-1 shadow-sm">
   <button onclick="setFilter('Todos')" id="filter-Todos"
-    class="filter-btn rounded px-3 py-1 text-xs font-semibold bg-blue-600 text-white">Todos</button>
+    class="filter-btn rounded px-3 py-1 text-xs font-semibold bg-brand-teal text-white">Todos</button>
   <button onclick="setFilter('Em andamento')" id="filter-Em andamento"
     class="filter-btn rounded px-3 py-1 text-xs font-semibold text-slate-600 hover:text-slate-900">Em andamento</button>
   <button onclick="setFilter('Concluída')" id="filter-Concluída"
@@ -63,17 +63,17 @@
     <label class="mt-5 block text-sm font-semibold text-slate-900">
       Descrição da ação
       <input id="action-name-input" required placeholder="Ex.: Vistoria em unidade de saúde"
-        class="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 font-normal text-sm outline-none focus:ring-2 focus:ring-blue-600" />
+        class="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 font-normal text-sm outline-none focus:ring-2 focus:ring-brand-teal" />
     </label>
     <label class="mt-4 block text-sm font-semibold text-slate-900">
       Equipe responsável
       <input id="action-team-input" placeholder="Ex.: Vigilância Ambiental"
-        class="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 font-normal text-sm outline-none focus:ring-2 focus:ring-blue-600" />
+        class="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 font-normal text-sm outline-none focus:ring-2 focus:ring-brand-teal" />
     </label>
     <label class="mt-4 block text-sm font-semibold text-slate-900">
       Distrito
       <select id="action-district-input"
-        class="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 font-normal text-sm outline-none focus:ring-2 focus:ring-blue-600">
+        class="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 font-normal text-sm outline-none focus:ring-2 focus:ring-brand-teal">
         <option>DS I</option>
         <option>DS II</option>
         <option>DS III</option>
@@ -87,12 +87,12 @@
     <label class="mt-4 block text-sm font-semibold text-slate-900">
       Data
       <input type="date" id="action-date-input"
-        class="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 font-normal text-sm outline-none focus:ring-2 focus:ring-blue-600" />
+        class="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 font-normal text-sm outline-none focus:ring-2 focus:ring-brand-teal" />
     </label>
     <label class="mt-4 block text-sm font-semibold text-slate-900">
       Status
       <select id="action-status-input"
-        class="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 font-normal text-sm outline-none focus:ring-2 focus:ring-blue-600">
+        class="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 font-normal text-sm outline-none focus:ring-2 focus:ring-brand-teal">
         <option>Em andamento</option>
         <option>Concluída</option>
       </select>
@@ -103,7 +103,7 @@
         class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
         Cancelar
       </button>
-      <button type="submit" class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+      <button type="submit" class="rounded-md bg-brand-teal px-4 py-2 text-sm font-medium text-white hover:bg-brand-tealdark">
         Registrar ação
       </button>
     </div>

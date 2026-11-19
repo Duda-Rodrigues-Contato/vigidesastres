@@ -1,0 +1,28 @@
+{% load static %}
+<aside class="flex h-full w-64 flex-col bg-brand-navy text-slate-100">
+  <a href="{% url 'dashboard' %}" class="flex h-20 items-center gap-3 border-b border-white/10 px-6">
+    <div class="grid size-10 shrink-0 place-items-center rounded-lg bg-white p-1">
+      <img src="{% static 'core/logo.png' %}" alt="Vigidesastre" class="h-full w-full object-contain"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+      <i data-lucide="shield-check" class="hidden h-6 w-6 text-brand-navy"></i>
+    </div>
+    <div class="min-w-0">
+      <div class="truncate text-lg font-bold tracking-tight">Vigidesastre</div>
+      <div class="text-xs font-medium text-brand-teal">SMS · Recife</div>
+    </div>
+  </a>
+
+  <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-6" aria-label="Navegação principal">
+    {% include 'components/nav-links.html' %}
+  </nav>
+
+  <div class="border-t border-white/10 p-4">
+    <div class="flex items-center gap-3">
+      <div class="grid size-9 place-items-center rounded-full bg-brand-teal text-xs font-bold text-white">VE</div>
+      <div>
+        <div class="text-xs font-semibold">Vigilância em Saúde</div>
+        <div class="text-[11px] text-slate-400">Operação integrada</div>
+      </div>
+    </div>
+  </div>
+</aside>

@@ -30,9 +30,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-only')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Local: ligado por padrão. Em produção, defina DEBUG=0 no .env.
+DEBUG = os.getenv('DEBUG', '1').lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = []
+# Em produção: ALLOWED_HOSTS=meu-dominio.com,outro.com (separados por vírgula)
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', '').split(',') if h.strip()]
 
 
 # Application definition
@@ -142,8 +144,4 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

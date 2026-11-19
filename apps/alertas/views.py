@@ -7,9 +7,19 @@ from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 
 from .models import AcaoResposta, Alerta
+
+
+def _corpo_json(request):
+    """Corpo da requisição como dict, ou None se o JSON for inválido."""
+    try:
+        dados = json.loads(request.body or "{}")
+    except ValueError:
+        return None
+    return dados if isinstance(dados, dict) else None
 
 
 def _alerta_para_tela(a):
@@ -24,6 +34,8 @@ def _acao_para_tela(a):
             "date": a.data.strftime("%d/%m/%Y"), "status": a.get_status_display()}
 
 
+# o JS lê o cookie csrftoken para os POSTs: a tela precisa garantir que ele exista
+@ensure_csrf_cookie
 def alertas_view(request):
     alertas = list(Alerta.objects.all()[:500])
     totais = {"total": len(alertas)}
@@ -36,7 +48,10 @@ def alertas_view(request):
 @require_POST
 def alterar_status_alerta(request, pk):
     alerta = get_object_or_404(Alerta, pk=pk)
-    status = json.loads(request.body or "{}").get("status")
+    dados = _corpo_json(request)
+    if dados is None:
+        return JsonResponse({"erro": "JSON inválido"}, status=400)
+    status = dados.get("status")
     if status not in Alerta.Status.values:
         return JsonResponse({"erro": "status inválido"}, status=400)
     alerta.status = status
@@ -44,6 +59,7 @@ def alterar_status_alerta(request, pk):
     return JsonResponse(_alerta_para_tela(alerta))
 
 
+@ensure_csrf_cookie
 def acoes_view(request):
     acoes = AcaoResposta.objects.all()[:500]
     return render(request, "alertas/acoes.html", {"acoes": [_acao_para_tela(a) for a in acoes]})
@@ -51,7 +67,9 @@ def acoes_view(request):
 
 @require_POST
 def criar_acao(request):
-    dados = json.loads(request.body or "{}")
+    dados = _corpo_json(request)
+    if dados is None:
+        return JsonResponse({"erro": "JSON inválido"}, status=400)
     status = {"Em andamento": AcaoResposta.Status.ANDAMENTO, "Concluída": AcaoResposta.Status.CONCLUIDA}.get(
         dados.get("status"), dados.get("status"))
     try:
