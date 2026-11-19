@@ -25,10 +25,21 @@ Regras fixadas ANTES de rodar:
 O teste das outras versões aparece só para mostrar quanto cada mudança ajudou.
 
 Uso:
-    python -m ml.demanda
+    python -m ml.demanda             avaliação (versões, régua, veredito)
+    python -m ml.demanda --salvar    treina com todos os anos e salva em modelos/demanda.joblib
+    python -m ml.demanda --prever    previsão da semana atual por distrito -> gold.demanda_previsao
+    Demonstração com uma semana já conhecida (o modelo não pode ter visto esse ano):
+    python -m ml.demanda --salvar --ate-ano 2023 && python -m ml.demanda --prever --data 2024-05-20
+
+Na previsão, usa a versão 3 quando há atendimentos da semana passada no banco; se os dados da
+Defesa Civil estiverem atrasados, cai para a versão 1 (só calendário e chuva) e avisa na tela.
 """
 
+import argparse
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+
+import joblib
 
 import numpy as np
 import pandas as pd
@@ -36,14 +47,19 @@ from sklearn.base import clone
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 from xgboost import XGBRegressor
 
+from dominio.distritos import nome_distrito
 from dominio.feriados import feriados_recife
 from etl.destinos import obter_destino
+from etl.destinos.base import Carga
 
 SAIDA = Path(__file__).resolve().parents[1] / "analises" / "ml" / "saida"
 TREINO, TESTE = range(2015, 2022), range(2022, 2025)
 GRADE = {"n_estimators": [200, 400], "max_depth": [3, 5], "learning_rate": [0.05, 0.1]}
 GANHO_MINIMO = 0.10
 CHUVA_FORTE_MM = 30
+AVALIACAO = SAIDA / "demanda_avaliacao.joblib"
+PASTA_MODELOS = Path(__file__).resolve().parents[1] / "modelos"
+COMPLETA, REDUZIDA = "3 + chuva detalhada", "1 corrigida"     # completa: escolhida na avaliação
 
 CALENDARIO = ["distrito_codigo", "semana", "mes", "feriados"]
 DEMANDA_ANTERIOR = ["atend_ant_1", "atend_media_4"]
@@ -144,7 +160,9 @@ def _versao(treino, teste, entradas, alvos, grade):
     return previsto, float(np.mean(erros)), modelos
 
 
-def executar(s, grade=None, avisar=print):
+def executar(s, grade=None, avisar=print, detalhes=None):
+    """Avalia as versões. Se `detalhes` for um dict, ele recebe tabela, previsões do teste e importâncias
+    (o painel app_ml.py lê isso do arquivo salvo por main)."""
     grade = grade or GRADE
     treino = s[s["ano"].isin(TREINO)].sort_values("inicio")
     teste = s[s["ano"].isin(TESTE)].sort_values("inicio")
@@ -182,19 +200,125 @@ def executar(s, grade=None, avisar=print):
         avisar(f"Importância ({alvo}): " + ", ".join(f"{k} {v:.2f}" for k, v in imp))
     avisar(f"VEREDITO: {'APROVADO' if aprovado else 'NÃO APROVADO'} (precisa errar pelo menos "
            f"{GANHO_MINIMO:.0%} menos que a régua)")
+    if detalhes is not None:
+        tabela = [{"versao": n, "validacao": r[1], **r[3]} for n, r in resultados.items()]
+        tabela += [{"versao": "régua (o normal)", "validacao": None, **ref},
+                   {"versao": "ingênuo (igual à semana passada)", "validacao": None, **ingenuo}]
+        detalhes.update({
+            "tabela": tabela, "escolhida": escolhida, "aprovado": bool(aprovado), "ganho_minimo": GANHO_MINIMO,
+            "teste": teste[["distrito_codigo", "inicio", "atendimentos", "atend_ant_1"]].assign(
+                previsto=previsto, normal=normal).reset_index(drop=True),
+            "importancia": {a: dict(zip(VERSOES[escolhida][0], map(float, m.feature_importances_)))
+                            for m, a in zip(modelos, VERSOES[escolhida][1])},
+            "avaliado_em": datetime.now(timezone.utc).isoformat()})
     return aprovado, m["mae"], ref["mae"]
 
 
+def treinar_final(s, grade=None):
+    """Treina as versões completa e reduzida com todas as semanas disponíveis."""
+    s = s.sort_values("inicio")
+    modelos = {v: _ajustar(s, VERSOES[v][0], "atendimentos", grade or GRADE) for v in (COMPLETA, REDUZIDA)}
+    normal = s.groupby(["distrito_codigo", "semana"])["atendimentos"].mean()
+    return {"modelos": modelos, "normal": {f"{d}-{w}": float(v) for (d, w), v in normal.items()},
+            "ultima_semana": s["inicio"].max().date().isoformat(),
+            "treinado_em": datetime.now(timezone.utc).isoformat()}
+
+
+def inicio_da_semana(dia):
+    return dia - timedelta(days=dia.weekday())
+
+
+def prever(df, pacote, hoje=None, dados_ate=None):
+    """Previsão da semana que contém `hoje` (segunda a domingo), por distrito.
+
+    Acrescenta à tabela diária a semana-alvo vazia: assim `semanal` monta as entradas dela
+    (semanas anteriores, feriados, calendário) do mesmo jeito que no treino."""
+    hoje = hoje or date.today()
+    alvo = pd.Timestamp(inicio_da_semana(hoje))
+    df = df.copy()
+    if df.empty:
+        df = pd.DataFrame(columns=["distrito_codigo", "data", "chuva_dia_mm", "atendimentos_reativos",
+                                   "atendimentos_chuva"])
+    df["data"] = pd.to_datetime(df["data"])
+    df = df[df["data"] < alvo]
+    distritos = sorted(df["distrito_codigo"].unique()) or list(range(1, 9))
+    vazia = pd.DataFrame([{"distrito_codigo": d, "data": alvo + timedelta(days=i), "chuva_dia_mm": 0.0,
+                           "atendimentos_reativos": 0, "atendimentos_chuva": 0}
+                          for d in distritos for i in range(7)])
+    s = semanal(pd.concat([df, vazia], ignore_index=True))
+    s = s[s["inicio"] == alvo]
+    ultimo_dado = pd.Timestamp(dados_ate) if dados_ate else df["data"].max() if len(df) else pd.NaT
+    docs = []
+    for _, linha in s.iterrows():
+        versao = COMPLETA if not np.isnan(linha["atend_ant_1"]) else REDUZIDA
+        entradas = VERSOES[versao][0]
+        valor = float(pacote["modelos"][versao].predict(linha[entradas].to_frame().T.astype(float))[0])
+        normal = pacote["normal"].get(f"{int(linha['distrito_codigo'])}-{int(linha['semana'])}")
+        d = int(linha["distrito_codigo"])
+        docs.append({"distrito_codigo": d, "distrito": nome_distrito(d), "inicio_semana": alvo.date().isoformat(),
+                     "fim_semana": (alvo + timedelta(days=6)).date().isoformat(),
+                     "previsto": round(valor, 1), "normal": round(normal, 1) if normal is not None else None,
+                     "variacao": round(valor / normal - 1, 2) if normal else None,
+                     "versao": versao, "completa": versao == COMPLETA,
+                     "dados_ate": ultimo_dado.date().isoformat() if pd.notna(ultimo_dado) else None,
+                     "gerado_em": datetime.now(timezone.utc).isoformat()})
+    return docs
+
+
+def _ler_diario(banco, filtro):
+    return pd.DataFrame(list(banco["gold_ml_distrito_dia"].find(
+        filtro, {"_id": 0, "distrito_codigo": 1, "data": 1, "atendimentos_reativos": 1, "atendimentos_chuva": 1,
+                 "chuva_dia_mm": 1})))
+
+
 def main():
+    argumentos = argparse.ArgumentParser()
+    argumentos.add_argument("--salvar", action="store_true", help="treina com todos os anos e salva o modelo")
+    argumentos.add_argument("--prever", action="store_true", help="grava a previsão da semana atual no banco")
+    argumentos.add_argument("--ate-ano", type=int, help="com --salvar: treina só até este ano (para demonstração)")
+    argumentos.add_argument("--data", help="com --prever: prevê a semana desta data (AAAA-MM-DD), para demonstração")
+    args = argumentos.parse_args()
+    destino = obter_destino()
+    banco = destino.banco
+    arquivo = PASTA_MODELOS / "demanda.joblib"
+
+    if args.salvar:
+        PASTA_MODELOS.mkdir(parents=True, exist_ok=True)
+        filtro = {"ano": {"$gte": 2015, "$lte": args.ate_ano}} if args.ate_ano else {"ano": {"$gte": 2015}}
+        pacote = treinar_final(semanal(_ler_diario(banco, filtro)))
+        joblib.dump(pacote, arquivo)
+        print(f"Modelo salvo em {arquivo} (dados até a semana de {pacote['ultima_semana']})")
+        return
+    if args.prever:
+        if not arquivo.exists():
+            print("Modelo de demanda ainda não treinado: rode python -m ml.demanda --salvar")
+            return
+        recente = list(banco["gold_ml_distrito_dia"].find({}, {"_id": 0, "data": 1}).sort("data", -1).limit(1))
+        hoje = date.fromisoformat(args.data) if args.data else date.today()
+        dados_ate = min(pd.Timestamp(recente[0]["data"]), pd.Timestamp(hoje)) if recente else None
+        desde = datetime.combine(hoje - timedelta(days=60), datetime.min.time())
+        ate = datetime.combine(hoje + timedelta(days=7), datetime.min.time())
+        diario = _ler_diario(banco, {"data": {"$gte": desde, "$lt": ate}})
+        docs = prever(diario, joblib.load(arquivo), hoje=hoje, dados_ate=dados_ate)
+        if args.data:                                          # demonstração: o real já é conhecido
+            real = semanal(diario).set_index(["distrito_codigo", "inicio"])["atendimentos"]
+            for doc in docs:
+                doc["real"] = float(real.get((doc["distrito_codigo"], pd.Timestamp(doc["inicio_semana"])), np.nan))
+                doc["real"] = None if np.isnan(doc["real"]) else doc["real"]
+                doc["demonstracao"] = True
+        destino.carregar(Carga("gold.demanda_previsao", docs))           # substitui a previsão anterior
+        if docs:
+            print(f"Previsão da semana de {docs[0]['inicio_semana']}: {len(docs)} distritos, "
+                  f"versão {docs[0]['versao']} (dados da Defesa Civil até {docs[0]['dados_ate']})")
+        return
+
     SAIDA.mkdir(parents=True, exist_ok=True)
-    banco = obter_destino().banco
-    df = pd.DataFrame(list(banco["gold_ml_distrito_dia"].find(
-        {"ano": {"$gte": 2015, "$lte": 2024}},
-        {"_id": 0, "distrito_codigo": 1, "data": 1, "atendimentos_reativos": 1, "atendimentos_chuva": 1,
-         "chuva_dia_mm": 1})))
-    linhas = []
-    executar(semanal(df), avisar=lambda t: (print(t, flush=True), linhas.append(t)))
+    linhas, detalhes = [], {}
+    executar(semanal(_ler_diario(banco, {"ano": {"$gte": 2015, "$lte": 2024}})),
+             avisar=lambda t: (print(t, flush=True), linhas.append(t)), detalhes=detalhes)
     (SAIDA / "resultado_demanda.txt").write_text("\n".join(linhas), encoding="utf-8")
+    joblib.dump(detalhes, AVALIACAO)
+    print(f"Detalhes para o painel salvos em {AVALIACAO}")
 
 
 if __name__ == "__main__":

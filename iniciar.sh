@@ -5,4 +5,5 @@ git pull
 python -m etl mare cemaden previsao avisos_inmet infodengue
 python manage.py migrate --noinput
 python manage.py gerar_alertas
+python -m ml.demanda --prever     # previsão da semana na tela do Calendário
 python manage.py runserver

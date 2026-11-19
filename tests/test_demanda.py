@@ -1,5 +1,5 @@
 import random
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -57,3 +57,33 @@ def test_demanda_aprovada_quando_o_passado_explica():
 def test_metricas():
     m = demanda.metricas(np.array([10.0, 20.0, np.nan]), np.array([12.0, 18.0, 5.0]))
     assert m["mae"] == 2.0 and abs(m["wape"] - 4 / 30) < 1e-9
+
+
+def _pacote():
+    return demanda.treinar_final(demanda.semanal(_diario()), GRADE)
+
+
+def test_previsao_completa_quando_ha_semana_passada():
+    docs = demanda.prever(_diario(), _pacote(), hoje=date(2024, 12, 25))
+    assert {d["distrito_codigo"] for d in docs} == {2, 7}
+    assert all(d["completa"] and d["previsto"] > 0 and d["inicio_semana"] == "2024-12-23" for d in docs)
+
+
+def test_previsao_cai_para_o_calendario_com_dados_atrasados():
+    docs = demanda.prever(_diario(), _pacote(), hoje=date(2026, 11, 19))
+    assert docs and all(not d["completa"] and d["versao"] == demanda.REDUZIDA for d in docs)
+    assert docs[0]["dados_ate"] == "2024-12-31" and docs[0]["normal"] is not None
+    assert demanda.prever(_diario().iloc[0:0], _pacote(), hoje=date(2026, 11, 19))  # banco vazio não quebra
+
+
+def test_tela_do_calendario_mostra_a_previsao(client, destino, monkeypatch):
+    from apps.fontes.repositorios import conexao
+    from etl.destinos.base import Carga
+    docs = demanda.prever(_diario(), _pacote(), hoje=date(2026, 11, 19))
+    destino.carregar(Carga("gold.demanda_previsao", docs))
+    destino.banco["gold_calendario_risco_mes"].insert_one({"distrito_codigo": 2, "distrito": "DS II", "mes": 1,
+        "media_dia": 1, "indice": 1, "ano_calmo": 2015, "media_ano_calmo": 1, "ano_intenso": 2016,
+        "media_ano_intenso": 2})
+    monkeypatch.setattr(conexao, "banco", lambda: destino.banco)
+    html = client.get("/calendario/").content.decode()
+    assert "semana de 16/11/2026 a 22/11/2026" in html and "vão até 31/12/2024" in html and "DS VII" in html

@@ -18,3 +18,5 @@ xgboost
 cdsapi
 xarray
 netCDF4
+streamlit
+plotly
