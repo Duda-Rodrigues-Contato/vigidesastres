@@ -60,7 +60,7 @@ function generateReport(e) {
   // 4. Monta a lista de opções selecionadas de forma limpa (sem múltiplos appendChild)
   const opcoesSelecionadas = Array.from(document.querySelectorAll('.report-option:checked'));
   const containerLista = document.getElementById('selected-list');
-  
+
   containerLista.innerHTML = opcoesSelecionadas.map(opcao => `
     <li class="flex items-center gap-2 text-slate-700">
       <i data-lucide="check-circle-2" class="w-4 h-4 text-green-600"></i> 
@@ -74,8 +74,43 @@ function generateReport(e) {
 
   // 6. Recarrega os ícones dinâmicos injetados no HTML
   lucide.createIcons();
+
 }
 
+async function downloadPdf() {
+  // O ícone fica visível desde o início; só baixa se a prévia já foi gerada
+  const previa = document.getElementById('generated-preview');
+  if (previa.classList.contains('hidden')) {
+    return alert('Gere a prévia do relatório antes de baixar o PDF.');
+  }
+
+  const folha = document.getElementById('report-sheet');
+  const botao = document.getElementById('btn-download-pdf');
+
+  const inicio = document.getElementById('report-start').value;
+  const fim = document.getElementById('report-end').value;
+  const nomeArquivo = `relatorio-vigidesastres_${inicio}_a_${fim}.pdf`;
+
+  botao.disabled = true;
+  try {
+    await html2pdf()
+      .set({
+        margin: 10,
+        filename: nomeArquivo,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'], avoid: ['.rounded-md'] },
+      })
+      .from(folha)
+      .save();
+  } catch (erro) {
+    console.error(erro);
+    alert('Não foi possível gerar o PDF. Tente novamente.');
+  } finally {
+    botao.disabled = false;
+  }
+}
 
 // ============================================================================
 // INICIALIZAÇÃO: Travas e Limites do Calendário

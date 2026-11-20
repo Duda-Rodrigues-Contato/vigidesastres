@@ -1,20 +1,20 @@
 {% with current=request.resolver_match.url_name %}
-<a href="{% url 'dashboard' %}" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'dashboard' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+<a href="{% url 'dashboard' %}" data-tooltip="Dashboard" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'dashboard' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
   <i data-lucide="layout-dashboard" class="h-5 w-5"></i><span class="sidebar-text">Dashboard</span>
 </a>
-<a href="{% url 'mapa' %}" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'mapa' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+<a href="{% url 'mapa' %}" data-tooltip="Mapa" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'mapa' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
   <i data-lucide="map" class="h-5 w-5"></i><span class="sidebar-text">Mapa</span>
 </a>
-<a href="{% url 'alertas' %}" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'alertas' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+<a href="{% url 'alertas' %}" data-tooltip="Alertas" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'alertas' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
   <i data-lucide="bell-ring" class="h-5 w-5"></i><span class="sidebar-text">Alertas</span>
 </a>
-<a href="{% url 'calendario' %}" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'calendario' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+<a href="{% url 'calendario' %}" data-tooltip="Calendário" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'calendario' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
   <i data-lucide="calendar-range" class="h-5 w-5"></i><span class="sidebar-text">Calendário</span>
 </a>
-<a href="{% url 'relatorios' %}" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'relatorios' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+<a href="{% url 'relatorios' %}" data-tooltip="Relatórios" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'relatorios' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
   <i data-lucide="file-bar-chart" class="h-5 w-5"></i><span class="sidebar-text">Relatórios</span>
 </a>
-<a href="{% url 'acoes' %}" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'acoes' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+<a href="{% url 'acoes' %}" data-tooltip="Ações" class="flex h-11 items-center gap-3 rounded-md border-l-4 px-3 text-sm font-semibold transition-colors {% if current == 'acoes' %}border-brand-orange bg-white/10 text-white{% else %}border-transparent text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
   <i data-lucide="clipboard-check" class="h-5 w-5"></i><span class="sidebar-text">Ações</span>
 </a>
 {% endwith %}

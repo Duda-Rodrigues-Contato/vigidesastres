@@ -75,26 +75,26 @@
           </label>
         </div>
       </fieldset>
-
       <button type="submit"
         class="inline-flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700">
-        <i data-lucide="file-down" class="w-4 h-4"></i> Gerar PDF
+        <i data-lucide="file-down" class="w-4 h-4"></i> Gerar Relatório
       </button>
     </div>
   </form>
 
   <!-- Seção da Pré-visualização -->
   <section class="min-h-[650px] rounded-lg border border-slate-200 bg-slate-100 p-4 md:p-8">
-    <div class="mx-auto min-h-[590px] max-w-2xl bg-white p-6 shadow-lg md:p-10 rounded-md">
+    <div id="report-sheet" class="mx-auto min-h-[590px] max-w-2xl bg-white p-6 shadow-lg md:p-10 rounded-md">
       <div class="flex items-start justify-between border-b-2 border-blue-600 pb-5">
         <div>
           <p class="text-xs font-bold uppercase text-blue-600">Secretaria de Saúde do Recife</p>
           <h2 class="mt-1 text-2xl font-bold text-slate-900">Relatório Vigidesastres</h2>
           <p id="preview-subtitle" class="mt-1 text-xs text-slate-500">20/08/2026 a 02/09/2026 · Todos os distritos</p>
         </div>
-        <div class="grid size-11 place-items-center rounded-md bg-blue-600 text-white">
+        <button type="button" id="btn-download-pdf" onclick="downloadPdf()"
+        title="Baixar PDF" aria-label="Baixar relatório em PDF" class="grid size-11 place-items-center rounded-md bg-blue-600 text-white transition-colors hover:bg-blue-700">
           <i data-lucide="file-text" class="w-6 h-6"></i>
-        </div>
+        </button>
       </div>
 
       <!-- Estado Inicial (sem geração) -->
@@ -113,7 +113,6 @@
           class="mb-6 flex items-center gap-2 rounded-md bg-green-50 p-3 text-sm font-semibold text-green-800 border border-green-200">
           <i data-lucide="check-circle-2" class="w-5 h-5 text-green-600"></i> Prévia atualizada com sucesso
         </div>
-
         <div class="grid grid-cols-3 gap-3">
           <div class="rounded-md border border-slate-200 p-3">
             <small class="text-slate-500">Alertas</small>
@@ -173,5 +172,6 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="{% static 'relatorios/relatorios.js' %}"></script>
 {% endblock %}
