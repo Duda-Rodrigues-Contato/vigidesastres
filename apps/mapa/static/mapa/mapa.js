@@ -2,12 +2,25 @@
 // Dados do servidor chegam pelo json_script do template (o Django escapa o conteúdo).
 
 // 1. Inicializa o mapa centralizado em Recife
-const map = L.map('map').setView([-8.05, -34.9], 12);
+// O zoom padrão é desligado e recolocado à direita, para não ficar
+// embaixo da etiqueta "Recife · PE".
+const map = L.map('map', { zoomControl: false }).setView([-8.05, -34.9], 12);
 
-// 2. Adiciona a camada de mapa (tiles da Esri)
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+// 2. Mapas de fundo: Ruas (padrão) e Satélite, ambos da Esri.
+const baseRuas = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
   attribution: 'Tiles &copy; Esri'
-}).addTo(map);
+});
+const baseSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Tiles &copy; Esri'
+});
+baseRuas.addTo(map);
+L.control.zoom({ position: 'topright' }).addTo(map);
+L.control.layers({ 'Ruas': baseRuas, 'Satélite': baseSatelite }, null, { position: 'topright' }).addTo(map);
+
+// Linha de detalhe dos cards: rótulo à esquerda, valor à direita
+function linhaPop(rotulo, valor) {
+  return '<li><span>' + rotulo + '</span><span>' + valor + '</span></li>';
+}
 
 // 3. Busca os distritos no MongoDB via API
 // O GeoJSON do portal do Recife traz apenas o campo numerico
@@ -33,7 +46,7 @@ fetch('/api/situacao-distritos/')
   .then(dados => {
     dados.distritos.forEach(d => { situacao[d.nome] = d; });
     const alvo = new URLSearchParams(location.search).get('distrito');
-    if (alvo && situacao[alvo]) { distritoSelecionado = alvo; selectDistrict(alvo); }
+    if (alvo && situacao[alvo]) { distritoSelecionado = alvo; }
     if (typeof redesenharDistritos === 'function') redesenharDistritos();
   })
   .catch(err => console.error('Erro ao carregar a situação dos distritos:', err));
@@ -86,8 +99,8 @@ function formatarMm(mm) {
 //  - normal: preenchido pela cor de risco
 //  - chuva ligada: so um contorno fino e tracejado, para a borda
 //    grossa das zonas (por baixo) ser a linha dominante
-//  - selecionado: contorno grosso e escuro enquanto o card estiver aberto,
-//    para ligar visualmente o card ao poligono
+//  - selecionado: contorno grosso e roxo enquanto o distrito estiver
+//    selecionado (clique no distrito; clique de novo para desmarcar)
 function estiloDistrito(feature) {
   const selecionado = nomeDistrito(feature.properties) === distritoSelecionado;
   if (distritosEmContorno()) {
@@ -145,9 +158,9 @@ fetch('/api/distritos/')
         layer.on('mouseover', function () { destacar(layer); });
         layer.on('mouseout', function () { camadaDistritos.resetStyle(layer); });
         layer.on('click', function () {
-          distritoSelecionado = nome;
+          // seleciona e destaca o distrito; clicar de novo no mesmo tira o destaque
+          distritoSelecionado = (distritoSelecionado === nome) ? null : nome;
           redesenharDistritos();
-          selectDistrict(nome);
         });
       }
     }).addTo(map);
@@ -196,10 +209,13 @@ fetch('/api/unidades/')
       onEachFeature: function (feature, layer) {
         const p = feature.properties;
         layer.bindPopup(
-          '<strong>' + (p.nome || 'Sem nome') + '</strong><br>' +
-          '<span style="color:#64748b">' + (p.tipo || '') + '</span><br>' +
-          (p.bairro && p.bairro !== 'SN' ? 'Bairro: ' + p.bairro + '<br>' : '') +
-          (p.turno ? '<small>' + p.turno + '</small>' : '')
+          '<div class="pop">' +
+            '<div class="pop-topo"><span class="pop-tag">' + (p.tipo || 'Unidade de saúde') + '</span>' +
+            '<div class="pop-titulo">' + (p.nome || 'Sem nome') + '</div></div>' +
+            '<ul class="pop-linhas">' +
+              (p.bairro && p.bairro !== 'SN' ? linhaPop('Bairro', p.bairro) : '') +
+              (p.turno ? linhaPop('Atendimento', p.turno) : '') +
+            '</ul></div>'
         );
       }
     }).addTo(camadaUnidades);
@@ -343,9 +359,8 @@ function corRisco(tipos) {
 
 function listaHtml(titulo, itens) {
   if (!itens.length) return '';
-  return '<p style="margin:8px 0 2px;font-weight:600">' + titulo + ' (' + itens.length + ')</p>' +
-    '<ul style="margin:0;padding-left:16px;max-height:140px;overflow:auto">' +
-    itens.map(i => '<li>' + i + '</li>').join('') + '</ul>';
+  return '<p class="pop-secao">' + titulo + ' <span class="pop-badge">' + itens.length + '</span></p>' +
+    '<ul class="pop-lista">' + itens.map(i => '<li>' + i + '</li>').join('') + '</ul>';
 }
 
 const camadaRisco = L.layerGroup();
@@ -365,13 +380,14 @@ fetch('/api/areas-risco/')
         layer.bindTooltip('<strong>' + p.bairro + '</strong><br>' + p.total_areas +
           (p.total_areas === 1 ? ' área' : ' áreas') + ' de risco alto ou muito alto', { sticky: true });
         layer.bindPopup(
-          '<div style="max-width:280px;font-size:12px">' +
-          '<strong style="font-size:14px">' + p.bairro + '</strong>' +
-          '<p style="margin:4px 0;color:#64748b">Contém áreas de risco alto ou muito alto (R3/R4). ' +
-          'O risco está nas áreas listadas, não no bairro inteiro.</p>' +
-          listaHtml('Deslizamento', p.deslizamento) +
-          listaHtml('Alagamento', p.alagamento) +
-          '<p style="margin:8px 0 0;color:#94a3b8;font-size:11px">' + p.fonte + '</p></div>'
+          '<div class="pop">' +
+            '<div class="pop-topo"><span class="pop-tag">Área de risco</span>' +
+            '<div class="pop-titulo">' + p.bairro + '</div></div>' +
+            '<p class="pop-meta">Contém áreas de risco alto ou muito alto (R3/R4). ' +
+            'O risco está nas áreas listadas, não no bairro inteiro.</p>' +
+            listaHtml('Deslizamento', p.deslizamento) +
+            listaHtml('Alagamento', p.alagamento) +
+            '<p class="pop-nota">' + p.fonte + '</p></div>'
         );
       }
     }).addTo(camadaRisco);
@@ -470,20 +486,22 @@ function carregarArbo() {
           const p = feature.properties;
           const nomes = { dengue: 'Dengue', chikungunya: 'Chikungunya', zika: 'Zika' };
           const linhas = Object.entries(p.por_doenca)
-            .map(([d, n]) => '<li>' + nomes[d] + ': ' + n.toLocaleString('pt-BR') + '</li>').join('');
+            .map(([d, n]) => linhaPop(nomes[d], n.toLocaleString('pt-BR'))).join('');
           layer.bindTooltip('<strong>' + p.bairro + '</strong><br>' +
             (p.incidencia_10k === null ? 'sem dado' : fmt1(p.incidencia_10k) + ' por 10 mil hab.'), { sticky: true });
           layer.bindPopup(
-            '<div style="font-size:12px;max-width:260px">' +
-            '<strong style="font-size:14px">' + p.bairro + '</strong> · ' + dados.ano +
-            '<p style="margin:6px 0 2px;font-size:20px;font-weight:700">' +
-            (p.incidencia_10k === null ? '--' : fmt1(p.incidencia_10k)) +
-            ' <span style="font-size:12px;font-weight:400;color:#64748b">por 10 mil hab.</span></p>' +
-            '<p style="margin:0;color:#64748b">' + p.provaveis.toLocaleString('pt-BR') + ' casos prováveis · ' +
-            p.populacao.toLocaleString('pt-BR') + ' habitantes</p>' +
-            '<ul style="margin:6px 0 0;padding-left:16px">' + linhas + '</ul>' +
-            '<p style="margin:8px 0 0;color:#94a3b8;font-size:11px">Casos prováveis = notificados exceto descartados, ' +
-            'por bairro de residência. ' + dados.fonte + '.</p></div>'
+            '<div class="pop">' +
+              '<div class="pop-topo"><span class="pop-tag">' +
+              '<i class="pop-chip" style="background:' + corArbo(p.incidencia_10k) + '"></i>Arboviroses · ' + dados.ano + '</span>' +
+              '<div class="pop-titulo">' + p.bairro + '</div></div>' +
+              '<div class="pop-destaque"><span class="pop-num">' +
+              (p.incidencia_10k === null ? '--' : fmt1(p.incidencia_10k)) +
+              '</span><span class="pop-un">por 10 mil hab.</span></div>' +
+              '<p class="pop-meta">' + p.provaveis.toLocaleString('pt-BR') + ' casos prováveis · ' +
+              p.populacao.toLocaleString('pt-BR') + ' habitantes</p>' +
+              '<ul class="pop-linhas">' + linhas + '</ul>' +
+              '<p class="pop-nota">Casos prováveis = notificados exceto descartados, por bairro de residência. ' +
+              dados.fonte + '.</p></div>'
           );
         }
       }).addTo(camadaArbo);
@@ -549,14 +567,15 @@ const camadasRede = { abrigo: L.layerGroup(), escola: L.layerGroup(), cras: L.la
 function popupRede(p) {
   const linhas = Object.entries(p.detalhe || {})
     .filter(([k]) => !['CODESCOLA', 'CEP'].includes(k))
-    .map(([k, v]) => '<li>' + k.replaceAll('_', ' ').toLowerCase() + ': ' + v + '</li>').join('');
-  return '<div style="font-size:12px;max-width:260px">' +
-    '<p style="margin:0;color:#64748b;font-size:11px">' + REDE[p.tipo].rotulo + '</p>' +
-    '<strong style="font-size:14px">' + p.nome + '</strong>' +
-    '<p style="margin:4px 0">' + [p.endereco, p.bairro].filter(Boolean).join(' · ') + '</p>' +
-    (linhas ? '<ul style="margin:4px 0;padding-left:16px">' + linhas + '</ul>' : '') +
-    (p.tipo === 'abrigo' ? '<p style="margin:6px 0 0;color:#b45309;font-size:11px">Cadastro: não indica se está aberto nem a capacidade.</p>' : '') +
-    '<p style="margin:6px 0 0;color:#94a3b8;font-size:11px">' + p.fonte + '</p></div>';
+    .map(([k, v]) => linhaPop(k.replaceAll('_', ' ').toLowerCase(), v)).join('');
+  const local = [p.endereco, p.bairro].filter(Boolean).join(' · ');
+  return '<div class="pop">' +
+    '<div class="pop-topo"><span class="pop-tag">' + REDE[p.tipo].rotulo + '</span>' +
+    '<div class="pop-titulo">' + p.nome + '</div></div>' +
+    (local ? '<p class="pop-meta">' + local + '</p>' : '') +
+    (linhas ? '<ul class="pop-linhas">' + linhas + '</ul>' : '') +
+    (p.tipo === 'abrigo' ? '<p class="pop-aviso">Cadastro: não indica se está aberto nem a capacidade.</p>' : '') +
+    '<p class="pop-nota">' + p.fonte + '</p></div>';
 }
 
 fetch('/api/rede-apoio/')
@@ -624,13 +643,17 @@ function carregarCom() {
       onEachFeature: (f, layer) => {
         const p = f.properties;
         const linhas = Object.entries(NOMES_IND).filter(([k]) => p.indicadores[k] !== null && p.indicadores[k] !== undefined)
-          .map(([k, n]) => '<li>' + n + ': ' + fmt1(p.indicadores[k]) + '</li>').join('');
+          .map(([k, n]) => linhaPop(n, fmt1(p.indicadores[k]))).join('');
         layer.bindTooltip('<strong>' + p.nome + '</strong><br>' + (p.valor === null ? 'sem dado' : fmt1(p.valor) + ' de 10'), { sticky: true });
-        layer.bindPopup('<div style="font-size:12px;max-width:260px"><strong style="font-size:14px">' + p.nome + '</strong>' +
-          '<p style="margin:2px 0;color:#64748b">' + p.bairro + (p.populacao_2014 ? ' · ' + p.populacao_2014.toLocaleString('pt-BR') + ' hab. (2014)' : '') + '</p>' +
-          (p.precariedade ? '<p style="margin:4px 0">' + p.precariedade + '</p>' : '') +
-          '<ul style="margin:4px 0;padding-left:16px">' + linhas + '</ul>' +
-          '<p style="margin:6px 0 0;color:#94a3b8;font-size:11px">Notas de 0 a 10, maior = pior. Levantamento de 2014: retrato da estrutura, não da população atual.</p></div>');
+        layer.bindPopup(
+          '<div class="pop">' +
+            '<div class="pop-topo"><span class="pop-tag">Comunidade</span>' +
+            '<div class="pop-titulo">' + p.nome + '</div></div>' +
+            '<p class="pop-meta">' + p.bairro + (p.populacao_2014 ? ' · ' + p.populacao_2014.toLocaleString('pt-BR') + ' hab. (2014)' : '') + '</p>' +
+            (p.precariedade ? '<p class="pop-meta">' + p.precariedade + '</p>' : '') +
+            '<ul class="pop-linhas">' + linhas + '</ul>' +
+            '<p class="pop-nota">Notas de 0 a 10, maior = pior. Levantamento de 2014: retrato da estrutura, não da população atual.</p></div>'
+        );
       }
     }).addTo(camadaCom);
     if (map.hasLayer(camadaCom) && map.hasLayer(camadaUnidades)) {
@@ -647,27 +670,6 @@ document.getElementById('camada-com').addEventListener('change', e => {
   redesenharDistritos();
 });
 document.getElementById('com-indicador').addEventListener('change', carregarCom);
-
-function selectDistrict(id) {
-  const card = document.getElementById('district-detail-card');
-  const d = situacao[id] || {};
-  const titulo = document.getElementById('selected-district-name');
-  titulo.innerText = id || 'Distrito';
-  titulo.style.color = COR_SELECAO;
-  document.getElementById('district-rain').innerText = formatarMm(d.chuva_24h_mm);
-  document.getElementById('district-rain-label').innerText =
-    d.estacao_24h ? 'Chuva 24h · ' + d.estacao_24h : 'Chuva 24h medida';
-  document.getElementById('district-cases').innerText = formatarMm(d.previsao_24h_mm);
-  document.getElementById('district-alerts').innerText = d.alertas_abertos ?? '--';
-  card.title = (d.motivos || []).join('\n') || ('Nível: ' + (d.nivel || 'sem dado'));
-  card.classList.remove('hidden');
-}
-
-function closeDistrictDetail() {
-  document.getElementById('district-detail-card').classList.add('hidden');
-  distritoSelecionado = null;
-  redesenharDistritos();
-}
 
 // ─── Camada: índice de vulnerabilidade por bairro (etapa 4b) ─────────
 const camadaVul = L.layerGroup();
@@ -695,16 +697,21 @@ function carregarVul() {
         const v = p[campo];
         layer.bindTooltip('<strong>' + p.nome + '</strong><br>' + NOMES_VUL[campo] + ': ' +
           (v === null || v === undefined ? 'sem dado' : fmt1(v)) + (p.posicao ? ' · ' + p.posicao + 'º de 94' : ''), { sticky: true });
-        layer.bindPopup('<div style="font-size:12px;max-width:270px"><strong style="font-size:14px">' + p.nome + '</strong>' +
-          '<p style="margin:2px 0;color:#64748b">' + (p.posicao ? p.posicao + 'º mais vulnerável de 94 · classe ' + p.classe : 'sem índice') + '</p>' +
-          '<ul style="margin:4px 0;padding-left:16px">' +
-          '<li>População em comunidades: ' + (p.pct_pop_comunidades === null ? 'sem dado' : Math.round(p.pct_pop_comunidades * 100) + '%') + '</li>' +
-          '<li>Risco médio das comunidades: ' + fmt1(p.risco_comunidades) + ' de 10</li>' +
-          '<li>Áreas de risco (Plano 2024): ' + p.areas_risco + '</li>' +
-          '<li>Atendimentos por 10 mil hab. em dia de chuva forte: ' +
-          (p.atendimentos_10k_por_dia_forte === null ? 'sem dado' : fmt1(p.atendimentos_10k_por_dia_forte)) + '</li></ul>' +
-          '<p style="margin:6px 0 0;color:#94a3b8;font-size:11px">Índice relativo entre os bairros do Recife (0 a 1). ' +
-          'Estrutural: cadastros. Histórico: Defesa Civil 2015-2024.</p></div>');
+        layer.bindPopup(
+          '<div class="pop">' +
+            '<div class="pop-topo"><span class="pop-tag">Vulnerabilidade</span>' +
+            '<div class="pop-titulo">' + p.nome + '</div></div>' +
+            '<p class="pop-meta">' + (p.posicao ? p.posicao + 'º mais vulnerável de 94 · classe ' + p.classe : 'sem índice') + '</p>' +
+            '<ul class="pop-linhas">' +
+              linhaPop('População em comunidades', p.pct_pop_comunidades === null ? 'sem dado' : Math.round(p.pct_pop_comunidades * 100) + '%') +
+              linhaPop('Risco médio das comunidades', p.risco_comunidades == null ? 'sem dado' : fmt1(p.risco_comunidades) + ' de 10') +
+              linhaPop('Áreas de risco (Plano 2024)', p.areas_risco) +
+              linhaPop('Atendimentos por 10 mil hab. em dia de chuva forte',
+                p.atendimentos_10k_por_dia_forte === null ? 'sem dado' : fmt1(p.atendimentos_10k_por_dia_forte)) +
+            '</ul>' +
+            '<p class="pop-nota">Índice relativo entre os bairros do Recife (0 a 1). ' +
+            'Estrutural: cadastros. Histórico: Defesa Civil 2015-2024.</p></div>'
+        );
       }
     }).addTo(camadaVul);
     if (map.hasLayer(camadaUnidades)) camadaUnidades.eachLayer(l => l.bringToFront && l.bringToFront());
@@ -749,3 +756,24 @@ document.getElementById('camada-perfil').addEventListener('change', e => {
   atualizarPainelRisco();
   redesenharDistritos();
 });
+
+// ─── Resumo das camadas ativas + botão "Limpar" (só interface) ───────
+const CAMADAS_TEMATICAS = {
+  'camada-chuva': 'Chuva', 'camada-risco': 'Áreas de risco', 'camada-com': 'Comunidades',
+  'camada-vul': 'Vulnerabilidade', 'camada-perfil': 'Perfis', 'camada-arbo': 'Arboviroses'
+};
+
+function atualizarResumoCamadas() {
+  const ativas = Object.entries(CAMADAS_TEMATICAS)
+    .filter(([id]) => document.getElementById(id).checked)
+    .map(([, nome]) => nome);
+  document.getElementById('resumo-camadas').textContent =
+    ativas.length ? ativas.join(' + ') : 'Nenhuma camada temática ligada';
+  document.getElementById('limpar-camadas').classList.toggle('hidden', !ativas.length);
+}
+
+Object.keys(CAMADAS_TEMATICAS).forEach(id =>
+  document.getElementById(id).addEventListener('change', atualizarResumoCamadas));
+document.getElementById('limpar-camadas').addEventListener('click', () =>
+  Object.keys(CAMADAS_TEMATICAS).forEach(id => desligar(id)));
+atualizarResumoCamadas();
