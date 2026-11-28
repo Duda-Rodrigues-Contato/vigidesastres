@@ -8,8 +8,9 @@ chave: rodar de novo no mesmo dia atualiza o alerta, não duplica. O status
 from django.utils import timezone
 
 from apps.fontes import painel_chuva
+from apps.fontes.repositorios import previsao as repo_previsao
 from apps.fontes.resumo_mare import resumo_mare
-from dominio import limiares
+from dominio import calor, limiares
 
 from .models import Alerta
 
@@ -36,6 +37,14 @@ def gerar_alertas(hoje=None):
         )
         novos, atualizados = novos + criado, atualizados + (not criado)
 
+    zonas_calor = [{**p, "nome": p["distrito"]} for p in repo_previsao.por_distrito()]
+    for a in calor.avaliar_calor(zonas_calor):
+        criado = _gravar(
+            f"calor:{a['zona']}:{hoje.isoformat()}",
+            titulo=f"Calor — {a['zona']}", tipo="Calor", nivel=a["nivel"], distrito=a["zona"],
+            motivo=a["motivo"], origem=Alerta.Origem.GATILHO, dados={"gatilho": a, "data": hoje.isoformat()},
+        )
+        novos, atualizados = novos + criado, atualizados + (not criado)
     for aviso in painel_chuva.avisos_oficiais():
         criado = _gravar(
             f"inmet:{aviso['id']}",

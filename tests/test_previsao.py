@@ -40,3 +40,16 @@ def test_upsert_nao_duplica(destino, monkeypatch):
     b = destino.banco
     assert b["silver_previsao_horaria"].count_documents({}) == 2 * len(HORAS)
     assert b["gold_previsao_distrito"].count_documents({}) == 2
+
+
+def test_gold_traz_o_calor_das_proximas_24h(destino, monkeypatch):
+    _api(monkeypatch)
+    serie = _serie(0.0)
+    serie["hourly"]["relative_humidity_2m"] = [60.0] * len(HORAS)        # 30 °C e 60%: índice ~33 °C
+    serie["hourly"]["temperature_2m"][5] = 33.0                           # um pico de 33 °C
+    monkeypatch.setattr(previsao, "get_json", lambda url, params: [serie, _serie(0.0)])
+    Previsao(destino).executar()
+    g = {d["distrito_codigo"]: d for d in destino.banco["gold_previsao_distrito"].find()}
+    assert g[1]["temp_max_24h_c"] == 33.0 and g[1]["indice_calor_max_24h_c"] > 38
+    assert g[1]["horas_cautela_extrema_24h"] == 24                         # todas as horas futuras acima de 32
+    assert g[2]["indice_calor_max_24h_c"] is None                         # sem umidade: sem índice

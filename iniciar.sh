@@ -13,3 +13,5 @@ python manage.py migrate --noinput
 python manage.py gerar_alertas || echo "aviso: não foi possível gerar os alertas de hoje"
 python -m ml.demanda --prever     # previsão da semana na tela do Calendário
 python manage.py runserver
+
+

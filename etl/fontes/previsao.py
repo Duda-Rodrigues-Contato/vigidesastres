@@ -6,7 +6,8 @@ vem do CEMADEN; aqui fica só o que nenhuma fonte medida oferece: o futuro.
 
   bronze  bronze_previsao            a resposta da API, uma por coleta
   silver  silver.previsao_horaria    distrito x hora, das últimas 24 h às próximas 48 h
-  gold    gold.previsao_distrito     por distrito: chuva prevista 24 h e 48 h, temperatura agora
+  gold    gold.previsao_distrito     por distrito: chuva prevista 24 h e 48 h, temperatura agora e
+                                     o calor das próximas 24 h (índice de calor, dominio/calor.py)
 
 Um ponto por distrito, garantidamente dentro do polígono. O modelo enxerga o
 Recife em poucas células: distritos na mesma célula recebem a mesma previsão,
@@ -15,6 +16,7 @@ e a célula usada fica registrada em cada linha.
 
 from datetime import datetime, timedelta, timezone
 
+from dominio.calor import CAUTELA_EXTREMA, indice_de_calor
 from etl.base import Conector
 from etl.comum.distritos import distritos_poligonos, nome_distrito
 from etl.comum.http import get_json
@@ -37,7 +39,7 @@ class Previsao(Conector):
         resposta = get_json(URL, {
             "latitude": ",".join(str(p["lat"]) for p in pontos),
             "longitude": ",".join(str(p["lon"]) for p in pontos),
-            "hourly": "precipitation,temperature_2m",
+            "hourly": "precipitation,temperature_2m,relative_humidity_2m",
             "past_days": 1,       # a temperatura "agora" é a última hora passada
             # 3 e não 2: com 2 a janela à frente encurta conforme a hora da coleta
             "forecast_days": 3,
@@ -56,11 +58,13 @@ class Previsao(Conector):
         linhas = []
         for ponto, r in zip(bruto["pontos"], bruto["respostas"]):
             h = r["hourly"]
-            for instante, chuva, temp in zip(h["time"], h["precipitation"], h["temperature_2m"]):
+            umidades = h.get("relative_humidity_2m") or [None] * len(h["time"])
+            for instante, chuva, temp, umidade in zip(h["time"], h["precipitation"], h["temperature_2m"], umidades):
                 hora = datetime.fromtimestamp(instante, tz=timezone.utc)
                 linhas.append({
                     "distrito_codigo": ponto["codigo"], "distrito": nome_distrito(ponto["codigo"]),
                     "hora": hora, "chuva_mm": chuva, "temperatura_c": temp,
+                    "umidade_pct": umidade, "indice_calor_c": indice_de_calor(temp, umidade),
                     "previsao": hora > coletado_em,
                     "celula_lat": r["latitude"], "celula_lon": r["longitude"],
                     "fonte": FONTE, "coletado_em": coletado_em,
@@ -80,6 +84,18 @@ class Previsao(Conector):
             fim = coletado_em + timedelta(hours=horas)
             return round(sum(l["chuva_mm"] or 0.0 for l in serie if coletado_em < l["hora"] <= fim), 1)
 
+        def calor(serie):
+            fim = coletado_em + timedelta(hours=24)
+            prox = [l for l in serie if coletado_em < l["hora"] <= fim and l.get("indice_calor_c") is not None]
+            if not prox:
+                return {"temp_max_24h_c": None, "indice_calor_max_24h_c": None,
+                        "horas_cautela_extrema_24h": None, "hora_pico_calor": None}
+            pico = max(prox, key=lambda l: l["indice_calor_c"])
+            return {"temp_max_24h_c": max(l["temperatura_c"] for l in prox),
+                    "indice_calor_max_24h_c": pico["indice_calor_c"],
+                    "horas_cautela_extrema_24h": sum(l["indice_calor_c"] >= CAUTELA_EXTREMA for l in prox),
+                    "hora_pico_calor": pico["hora"]}
+
         gold = []
         for codigo, serie in sorted(por_distrito.items()):
             passadas = [l for l in serie if not l["previsao"] and l["temperatura_c"] is not None]
@@ -87,6 +103,7 @@ class Previsao(Conector):
                 "distrito_codigo": codigo, "distrito": nome_distrito(codigo),
                 "chuva_prox_24h_mm": soma(serie, 24), "chuva_prox_48h_mm": soma(serie, 48),
                 "temperatura_c": passadas[-1]["temperatura_c"] if passadas else None,
+                **calor(serie),
                 "celula_lat": serie[0]["celula_lat"], "celula_lon": serie[0]["celula_lon"],
                 "fonte": FONTE, "coletado_em": coletado_em,
             })

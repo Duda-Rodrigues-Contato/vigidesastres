@@ -20,3 +20,13 @@ def serie_futura(distrito_codigo, inicio, fim):
     return list(conexao.banco()[SILVER].find(
         {"distrito_codigo": distrito_codigo, "hora": {"$gt": naive(inicio), "$lte": naive(fim)}},
         {"_id": 0, "hora": 1, "chuva_mm": 1}).sort("hora", 1))
+
+
+def calor_futuro(inicio, fim):
+    """Índice de calor por hora entre `inicio` e `fim`: o maior entre os distritos em cada hora."""
+    def naive(dt):
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return list(conexao.banco()[SILVER].aggregate([
+        {"$match": {"hora": {"$gt": naive(inicio), "$lte": naive(fim)}, "indice_calor_c": {"$ne": None}}},
+        {"$group": {"_id": "$hora", "indice": {"$max": "$indice_calor_c"}, "temperatura": {"$max": "$temperatura_c"}}},
+        {"$sort": {"_id": 1}}]))

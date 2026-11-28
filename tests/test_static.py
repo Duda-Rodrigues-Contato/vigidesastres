@@ -2,7 +2,8 @@ import pytest
 from django.contrib.staticfiles import finders
 
 TELAS = [("/dashboard/", "painel/dashboard.js"), ("/mapa/", "mapa/mapa.js"), ("/alertas/", "alertas/alertas.js"),
-         ("/acoes/", "alertas/acoes.js"), ("/relatorios/", "relatorios/relatorios.js")]
+         ("/acoes/", "alertas/acoes.js"), ("/relatorios/", "relatorios/relatorios.js"),
+         ("/calendario/", "painel/calendario.js")]
 
 
 @pytest.mark.django_db

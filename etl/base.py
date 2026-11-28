@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 
 class Conector(ABC):
     nome = "base"
-    frequencia = "diaria"  # diaria | semanal | anual
+    frequencia = "diaria"
     descricao = ""
 
     # LGPD: fontes com dado pessoal (SINAN, Defesa Civil) põem False e

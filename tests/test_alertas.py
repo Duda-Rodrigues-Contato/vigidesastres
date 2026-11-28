@@ -17,6 +17,7 @@ def _fontes(monkeypatch, gatilhos):
     monkeypatch.setattr(servicos, "resumo_mare", lambda: None)
     monkeypatch.setattr(servicos.limiares, "avaliar_gatilhos", lambda d, m: gatilhos)
     monkeypatch.setattr(servicos.painel_chuva, "avisos_oficiais", lambda: [AVISO])
+    monkeypatch.setattr(servicos.repo_previsao, "por_distrito", lambda: [])
 
 
 def test_gera_e_nao_duplica(monkeypatch):
@@ -97,3 +98,15 @@ def test_json_invalido_devolve_400_e_nao_500(client):
     assert client.post("/api/acoes/", "{quebrado", content_type="application/json").status_code == 400
     assert client.post("/api/acoes/", "[1, 2]", content_type="application/json").status_code == 400
 
+
+
+@pytest.mark.django_db
+def test_gera_alerta_de_calor_por_distrito(monkeypatch):
+    _fontes(monkeypatch, [])
+    monkeypatch.setattr(servicos.repo_previsao, "por_distrito", lambda: [
+        {"distrito": "DS VI", "indice_calor_max_24h_c": 36.2, "horas_cautela_extrema_24h": 5},
+        {"distrito": "DS I", "indice_calor_max_24h_c": 33.0, "horas_cautela_extrema_24h": 1}])
+    servicos.gerar_alertas()
+    calor = Alerta.objects.filter(tipo="Calor")
+    assert [(a.distrito, a.nivel) for a in calor] == [("DS VI", "MÉDIO")]
+    assert "36 °C" in calor[0].motivo and "5 h acima de 32 °C" in calor[0].motivo

@@ -33,3 +33,13 @@ def por_bairro(ano, doencas):
     return list(conexao.banco()[SILVER_BAIRRO_ANO].find(
         {"ano": ano, "doenca": {"$in": list(doencas)}},
         {"_id": 0, "chave": 1, "doenca": 1, "provaveis": 1, "populacao": 1}))
+
+
+def semanas_dois_anos():
+    """Todas as semanas do ano mais recente e do anterior, para comparar ano a ano."""
+    colecao = conexao.banco()[GOLD_SEMANA_CIDADE]
+    ultimo = colecao.find_one({}, {"ano": 1}, sort=[("se", -1)])
+    if not ultimo:
+        return []
+    return list(colecao.find({"ano": {"$gte": ultimo["ano"] - 1}},
+                             {"_id": 0, "ano": 1, "semana": 1, "estimados": 1, "nivel": 1}).sort("se", 1))
